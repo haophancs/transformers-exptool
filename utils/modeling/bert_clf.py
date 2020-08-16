@@ -197,7 +197,11 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
     valid_df = pd.read_csv(os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
                            sep='\t',
                            header=None)  # check
-    print('Using pretrained bert model:', pretrained_bert_name)
+    print('Using pretrained bert model:', pretrained_bert_name,
+          f'batch size = {batch_size},',
+          f'learning rate = {learning_rate}',
+          f'epoch(s) = {epochs}',
+          f'random_state = {random_state}')
 
     train_dataset = BertDataset(train_df[0].values, train_df[1].values, tokenizer, encode_config)
     valid_dataset = BertDataset(valid_df[0].values, valid_df[1].values, tokenizer, encode_config)
