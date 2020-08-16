@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from sklearn.metrics import f1_score, classification_report
+from sklearn.metrics import f1_score, classification_report, precision_score, recall_score, accuracy_score
 from torch import nn
 from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers import AutoModelForSequenceClassification, RobertaForSequenceClassification
@@ -16,31 +16,6 @@ from utils.dataset import create_data_loader, BertDataset
 from utils.pretrained import load_pretrained_tokenization, load_pretrained_model, load_pretrain_model_config
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-class CustomSequenceClassification(nn.Module):
-
-    @staticmethod
-    def from_pretrained(pretrained_model):
-        return CustomSequenceClassification(num_labels=pretrained_model.config.num_labels,
-                                            bert_model=pretrained_model)
-
-    def __init__(self,
-                 num_labels,
-                 bert_model,
-                 dropout=0.3):
-        super(CustomSequenceClassification, self).__init__()
-        self.bert = bert_model
-        self.dropout = nn.Dropout(dropout)
-        self.output = nn.Linear(self.bert.config.hidden_size, num_labels)
-
-    def forward(self, input_ids, attention_mask):
-        _, pooled_output = self.bert(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-        output = self.dropout(pooled_output)
-        return self.output(output),
 
 
 def load_sequence_classification_model(pretrained_name):
@@ -60,7 +35,6 @@ def load_sequence_classification_model(pretrained_name):
 def train_epoch(
         model,
         data_loader,
-        loss_fn,
         optimizer,
         device,
         scheduler):
@@ -74,16 +48,16 @@ def train_epoch(
         attention_mask = d["attention_mask"].to(device)
         targets = d["label"].to(device)
 
-        outputs = model(
+        loss, logits = model(
             input_ids=input_ids,
-            attention_mask=attention_mask
-        )[0]
+            attention_mask=attention_mask,
+            labels=targets
+        )
 
-        _, preds = torch.max(outputs, dim=1)
+        _, preds = torch.max(logits, dim=1)
         f1_scores.append(f1_score(targets.detach().cpu().numpy(),
                                   preds.detach().cpu().numpy()))
 
-        loss = loss_fn(outputs, targets)
         losses.append(loss.item())
 
         loss.backward()
@@ -95,7 +69,7 @@ def train_epoch(
     return np.mean(f1_scores), np.mean(losses)
 
 
-def eval_epoch(model, data_loader, loss_fn, device):
+def eval_epoch(model, data_loader, device):
     model = model.eval()
 
     losses = []
@@ -106,15 +80,15 @@ def eval_epoch(model, data_loader, loss_fn, device):
             attention_mask = d["attention_mask"].to(device)
             targets = d["label"].to(device)
 
-            outputs = model(
+            loss, logits = model(
                 input_ids=input_ids,
-                attention_mask=attention_mask
-            )[0]
-            _, preds = torch.max(outputs, dim=1)
+                attention_mask=attention_mask,
+                labels=targets
+            )
+            _, preds = torch.max(logits, dim=1)
             f1_scores.append(f1_score(targets.detach().cpu().numpy(),
                                       preds.detach().cpu().numpy()))
 
-            loss = loss_fn(outputs, targets)
             losses.append(loss.item())
     return np.mean(f1_scores), np.mean(losses)
 
@@ -152,13 +126,13 @@ def predict(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, 
             attention_mask = d["attention_mask"].to(device)
             targets = d["label"].to(device)
 
-            outputs = model(
+            logits = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask
             )[0]
-            _, preds = torch.max(outputs, dim=1)
+            _, preds = torch.max(logits, dim=1)
 
-            probs = F.softmax(outputs, dim=1)
+            probs = F.softmax(logits, dim=1)
 
             texts.extend(texts)
             predictions.extend(preds)
@@ -180,7 +154,10 @@ def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_s
         random_state=random_state,
         device=device
     )
-    print('F1 score:', f1_score(y_test, y_pred))
+    print('F1       :', f1_score(y_test, y_pred))
+    print('Precision:', precision_score(y_test, y_pred))
+    print('Recall   :', recall_score(y_test, y_pred))
+    print('Accuracy :', accuracy_score(y_test, y_pred))
     print(classification_report(y_test, y_pred))
 
 
@@ -197,11 +174,13 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
     valid_df = pd.read_csv(os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
                            sep='\t',
                            header=None)  # check
-    print('Using pretrained bert model:', pretrained_bert_name,
-          f'batch size = {batch_size},',
-          f'learning rate = {learning_rate}',
-          f'epoch(s) = {epochs}',
-          f'random_state = {random_state}')
+    print('Using pretrained bert model:', pretrained_bert_name)
+    print('Params = {',
+          f'batch_size: {batch_size},',
+          f'learning_rate: {learning_rate},',
+          f'epochs: {epochs},',
+          f'random_state: {random_state}',
+          '}')
 
     train_dataset = BertDataset(train_df[0].values, train_df[1].values, tokenizer, encode_config)
     valid_dataset = BertDataset(valid_df[0].values, valid_df[1].values, tokenizer, encode_config)
@@ -220,7 +199,6 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         num_training_steps=total_steps
     )
 
-    loss_fn = nn.CrossEntropyLoss().to(device)
     best_f1_score = -1
     history = defaultdict(list)
 
@@ -232,7 +210,6 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         train_f1, train_loss = train_epoch(
             model=model,
             data_loader=train_data_loader,
-            loss_fn=loss_fn,
             optimizer=optimizer,
             device=device,
             scheduler=scheduler
@@ -243,7 +220,6 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         val_f1, val_loss = eval_epoch(
             model=model,
             data_loader=val_data_loader,
-            loss_fn=loss_fn,
             device=device
         )
 
