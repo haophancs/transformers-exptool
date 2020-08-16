@@ -1,0 +1,5 @@
+{
+  "output_hidden_states": false,
+  "output_attentions": false,
+  "num_labels": 2
+}

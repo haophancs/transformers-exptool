@@ -1,0 +1,8 @@
+{
+  "append_eos": false,
+  "max_length": 128,
+  "pad_to_max_length": true,
+  "return_attention_mask": true,
+  "return_tensors": "pt",
+  "truncation": true
+}
