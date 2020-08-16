@@ -231,7 +231,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         history['val_f1'].append(val_f1)
         history['val_loss'].append(val_loss)
 
-        if val_f1 > best_f1_score:
+        if val_f1 > best_f1_score and epoch >= 1:
             if not os.path.exists(os.path.join(__models_path__, f'{pretrained_bert_name}')):
                 os.makedirs(os.path.join(__models_path__, f'{pretrained_bert_name}/'))
             torch.save(

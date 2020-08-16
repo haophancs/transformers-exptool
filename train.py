@@ -2,10 +2,6 @@ import argparse
 from utils.pretrained import PretrainedOptionsAvailable
 from utils.modeling import bert_clf
 
-LEARNING_RATES = [2e-5, 3e-5, 5e-5, 1e-5]
-BATCH_SIZES = [16, 32, 64]
-RANDOM_STATES = []
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--pretrained-bert',
@@ -20,7 +16,7 @@ if __name__ == '__main__':
                         type=int,
                         help='value of batch size')
     parser.add_argument('--epochs',
-                        default=10,
+                        default=4,
                         required=False,
                         type=int,
                         help='number of epoch(s)')
