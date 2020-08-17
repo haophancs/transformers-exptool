@@ -7,15 +7,12 @@ import unicodedata
 tokenizer = TweetTokenizer()
 
 
-def normalize_token(token, keep_emojis=True, tweet_optimized=True) -> str:
+def normalize_token(token, keep_emojis=True, username="@USER", httpurl="httpurl") -> str:
     lowercased_token = token.lower()
     if token.startswith("@"):
-        if tweet_optimized:
-            return "@USER"
-        else:
-            return ""
+        return username
     elif lowercased_token.startswith("http") or lowercased_token.startswith("www"):
-        return "http"
+        return httpurl
     elif len(token) == 1:
         if keep_emojis:
             demojized = demojize(token)
@@ -38,7 +35,7 @@ def normalize_token(token, keep_emojis=True, tweet_optimized=True) -> str:
             return token
 
 
-def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, tweet_optimized=True) -> str:
+def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, username="@USER", httpurl="httpurl") -> str:
     # Special characters
     norm_tweet = re.sub(r"\x89Û_", "", norm_tweet)
     norm_tweet = re.sub(r"\x89ÛÒ", "", norm_tweet)
@@ -163,6 +160,7 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
     norm_tweet = re.sub(r"&amp;", "&", norm_tweet)
 
     # Typos, slang and informal abbreviations
+    norm_tweet = re.sub(r"U.S", "United States", norm_tweet)
     norm_tweet = re.sub(r"w/e", "whatever", norm_tweet)
     norm_tweet = re.sub(r"w/", "with", norm_tweet)
     norm_tweet = re.sub(r"USAgov", "USA government", norm_tweet)
@@ -750,9 +748,11 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
     tokens = tokenizer.tokenize(norm_tweet.replace("’", "'").replace("…", "..."))
     norm_tweet = " ".join([normalize_token(token,
                                            keep_emojis=keep_emojis,
-                                           tweet_optimized=tweet_optimized) for token in tokens])
+                                           username="@USER",
+                                           httpurl="HTTPURL") for token in tokens])
     if '...' not in norm_tweet:
         norm_tweet = norm_tweet.replace('..', ' ... ')
+    norm_tweet = norm_tweet.replace(' \"\"', ' \"').replace('\"\" ', '\" ')
 
     norm_tweet = norm_tweet.replace("n't ", " n't ").replace("n 't ", " n't ").replace("n ' t ", " n't ")
     norm_tweet = norm_tweet.replace("cannot ", "can not ").replace("ca n't", "can't")
@@ -783,12 +783,14 @@ def normalize_series(tweet_series: pd.Series,
                      to_ascii=True,
                      to_lower=False,
                      keep_emojis=True,
-                     tweet_optimized=True) -> pd.Series:
+                     username="@USER",
+                     httpurl="HTTPURL") -> pd.Series:
     return tweet_series.apply(lambda txt: normalize_text(txt,
                                                          to_ascii=to_ascii,
                                                          to_lower=to_lower,
                                                          keep_emojis=keep_emojis,
-                                                         tweet_optimized=tweet_optimized))
+                                                         username=username,
+                                                         httpurl=httpurl))
 
 
 if __name__ == "__main__":

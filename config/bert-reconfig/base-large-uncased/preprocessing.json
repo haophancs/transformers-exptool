@@ -2,5 +2,7 @@
   "to_lower": true,
   "to_ascii": true,
   "keep_emojis": false,
-  "tweet_optimized": false
+  "tweet_optimized": false,
+  "username": "",
+  "httpurl": ""
 }
