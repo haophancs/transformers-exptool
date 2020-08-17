@@ -13,7 +13,7 @@ label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
 
 def run(pretrained_bert_name,
         train_limit=-1, valid_limit=-1, test_limit=-1,
-        to_lower=None, to_ascii=None, keep_emojis=None):
+        to_lower=None, to_ascii=None, keep_emojis=None, tweet_optimized=False):
     print('Loading dataset...', end=' ')
     train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None)[:train_limit].drop(columns=[0])
     valid_df = pd.read_csv('./data/raw/valid.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
@@ -30,14 +30,16 @@ def run(pretrained_bert_name,
         to_ascii = preprocess_config['to_ascii']
     if keep_emojis is None:
         keep_emojis = preprocess_config['keep_emojis']
+    if tweet_optimized is None:
+        tweet_optimized = preprocess_config['tweet_optimized']
 
     print('Normalizing texts...', end=' ')
     train_df[1] = normalize_series(train_df[1], to_lower=to_lower, to_ascii=to_ascii,
-                                   keep_emojis=keep_emojis)
+                                   keep_emojis=keep_emojis, tweet_optimized=tweet_optimized)
     valid_df[1] = normalize_series(valid_df[1], to_lower=to_lower, to_ascii=to_ascii,
-                                   keep_emojis=keep_emojis)
+                                   keep_emojis=keep_emojis, tweet_optimized=tweet_optimized)
     test_df[1] = normalize_series(test_df[1], to_lower=to_lower, to_ascii=to_ascii,
-                                  keep_emojis=keep_emojis)
+                                  keep_emojis=keep_emojis, tweet_optimized=tweet_optimized)
     print('done')
 
     print('Mapping label...', end=' ')
@@ -91,7 +93,13 @@ if __name__ == "__main__":
                         required=False,
                         type=bool,
                         help='convert to ascii')
+    parser.add_argument('--tweet-optimized',
+                        default=None,
+                        required=False,
+                        type=bool,
+                        help='tweet optimized')
     args = parser.parse_args()
     run(pretrained_bert_name=args.pretrained_bert,
         train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit,
-        to_ascii=args.to_ascii, to_lower=args.to_lower, keep_emojis=args.keep_emojis)
+        to_ascii=args.to_ascii, to_lower=args.to_lower,
+        keep_emojis=args.keep_emojis, tweet_optimized=args.tweet_optimized)

@@ -1,5 +1,6 @@
 {
   "to_lower": false,
   "to_ascii": true,
-  "keep_emojis": true
+  "keep_emojis": true,
+  "tweet_optimized": true
 }
