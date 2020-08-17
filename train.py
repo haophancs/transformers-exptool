@@ -1,6 +1,7 @@
 import argparse
 from utils.pretrained import PretrainedOptionsAvailable
 from utils.modeling import bert_clf
+import prepare_data
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -31,6 +32,7 @@ if __name__ == '__main__':
                         type=int,
                         help='random state')
     args = parser.parse_args()
+    prepare_data.run(pretrained_bert_name=args.pretrained_bert)
     bert_clf.train(pretrained_bert_name=args.pretrained_bert,
                    batch_size=args.batch_size,
                    epochs=args.epochs,

@@ -24,7 +24,6 @@ parser.add_argument('--bpe-codes',
                     help='path to fastBPE BPE')
 args = parser.parse_args(
     ['--bpe-codes', os.path.join(pretrained_prefix, 'vinai/bertweet-base/bpe.codes')])
-bpe = fastBPE(args)
 
 
 def BERTweetConfig(additional_config):
@@ -60,6 +59,7 @@ class BERTweetTokenizer:
         return attention_mask
 
     def encode(self, text: str, append_eos=False) -> List[str]:
+        bpe = fastBPE(args)
         subwords = '<s> ' + bpe.encode(text) + ' </s>'
         input_ids = self.__vocab.encode_line(subwords, append_eos=append_eos, add_if_not_exist=False).long().tolist()
         return input_ids
@@ -77,6 +77,8 @@ class BERTweetTokenizer:
         input_ids = self.encode(text, append_eos=append_eos)
         if max_length is not None:
             if truncation:
+                if len(input_ids) > max_length:
+                    print(f'Truncated: max sequence length is {max_length}, got {len(input_ids)}')
                 input_ids = input_ids[:max_length]
             else:
                 print("Truncation was not explicitely activated but `max_length` is provided a specific value, "

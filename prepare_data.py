@@ -6,49 +6,61 @@ from utils.pretrained import PretrainedOptionsAvailable
 import pandas as pd
 import argparse
 import os
+import json
 
 label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
 
+
+def run(pretrained_bert_name,
+        train_limit=-1, valid_limit=-1, test_limit=-1,
+        to_lower=None, to_ascii=None, keep_emojis=None):
+    print('Loading dataset...', end=' ')
+    train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None)[:train_limit].drop(columns=[0])
+    valid_df = pd.read_csv('./data/raw/valid.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
+    test_df = pd.read_csv('./data/raw/test.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
+    print('done')
+
+    additional_config_dirpath = f'./config/bert-reconfig/{pretrained_bert_name}'
+    assert pretrained_bert_name in PretrainedOptionsAvailable
+    with open(os.path.join(additional_config_dirpath, 'preprocessing.json')) as JSON:
+        preprocess_config = json.loads(JSON.read())
+    if to_lower is None:
+        to_lower = preprocess_config['to_lower']
+    if to_ascii is None:
+        to_ascii = preprocess_config['to_ascii']
+    if keep_emojis is None:
+        keep_emojis = preprocess_config['keep_emojis']
+
+    print('Normalizing texts...', end=' ')
+    train_df[1] = normalize_series(train_df[1], to_lower=to_lower, to_ascii=to_ascii,
+                                   keep_emojis=keep_emojis)
+    valid_df[1] = normalize_series(valid_df[1], to_lower=to_lower, to_ascii=to_ascii,
+                                   keep_emojis=keep_emojis)
+    test_df[1] = normalize_series(test_df[1], to_lower=to_lower, to_ascii=to_ascii,
+                                  keep_emojis=keep_emojis)
+    print('done')
+
+    print('Mapping label...', end=' ')
+    train_df[2] = train_df[2].apply(lambda label: label_map[label])
+    valid_df[2] = valid_df[2].apply(lambda label: label_map[label])
+    test_df[2] = test_df[2].apply(lambda label: label_map[label])
+    print('done')
+
+    train_df.to_csv(os.path.join('./data/normalized/', 'train_normalized.tsv'), sep='\t', index=False, header=False)
+    valid_df.to_csv(os.path.join('./data/normalized/', 'valid_normalized.tsv'), sep='\t', index=False, header=False)
+    test_df.to_csv(os.path.join('./data/normalized/', 'test_normalized.tsv'), sep='\t', index=False, header=False)
+    print('Normalized dataset saved at', os.path.abspath('./data/normalized'))
+
+
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train-path',
-                        default="./data/raw/train.tsv",
-                        required=False,
-                        type=str,
-                        help='path to the train set')
-    parser.add_argument('--valid-path',
-                        default="./data/raw/valid.tsv",
-                        required=False,
-                        type=str,
-                        help='path to the valid set')
-    parser.add_argument('--test-path',
-                        default="./data/raw/test.tsv",
-                        required=False,
-                        type=str,
-                        help='path to the test set')
-    parser.add_argument('--embedding-type',
-                        default="last-layer",
-                        choices=['last-layer', 'text-vector1d'],
-                        required=False,
-                        type=str,
-                        help='type of embedding')
     parser.add_argument('--pretrained-bert',
                         default="bert-base-cased",
+                        required=False,
                         choices=PretrainedOptionsAvailable,
-                        required=False,
                         type=str,
-                        help='name of pretrained bert')
-    parser.add_argument('--embedded-dir',
-                        default="./data/embedded",
-                        required=False,
-                        type=str,
-                        help='directory to save embedded data')
-    parser.add_argument('--normalized-dir',
-                        default="./data/normalized",
-                        required=False,
-                        type=str,
-                        help='directory to save normalized text data')
+                        help='pretrained bert model name')
     parser.add_argument('--train-limit',
                         default=-1,
                         required=False,
@@ -64,66 +76,22 @@ if __name__ == "__main__":
                         required=False,
                         type=int,
                         help='no. of rows limit of test set')
+    parser.add_argument('--keep-emojis',
+                        default=None,
+                        required=False,
+                        type=bool,
+                        help='keep emojis')
+    parser.add_argument('--to-lower',
+                        default=None,
+                        required=False,
+                        type=bool,
+                        help='to lowercased')
+    parser.add_argument('--to-ascii',
+                        default=None,
+                        required=False,
+                        type=bool,
+                        help='convert to ascii')
     args = parser.parse_args()
-    print('Loading dataset...', end=' ')
-    train_df = pd.read_csv(args.train_path, sep='\t', header=None)[:args.train_limit].drop(columns=[0])
-    valid_df = pd.read_csv(args.valid_path, sep='\t', header=None)[:args.valid_limit].drop(columns=[0])
-    test_df = pd.read_csv(args.test_path, sep='\t', header=None)[:args.test_limit].drop(columns=[0])
-    print('done')
-
-    print('Normalizing texts...', end=' ')
-    train_df[1] = normalize_series(train_df[1])
-    valid_df[1] = normalize_series(valid_df[1])
-    test_df[1] = normalize_series(test_df[1])
-    print('done')
-
-    print('Mapping label...', end=' ')
-    train_df[2] = train_df[2].apply(lambda label: label_map[label])
-    valid_df[2] = valid_df[2].apply(lambda label: label_map[label])
-    test_df[2] = test_df[2].apply(lambda label: label_map[label])
-    print('done')
-
-    train_df.to_csv(os.path.join(args.normalized_dir, 'train_normalized.tsv'), sep='\t', index=False, header=False)
-    valid_df.to_csv(os.path.join(args.normalized_dir, 'valid_normalized.tsv'), sep='\t', index=False, header=False)
-    test_df.to_csv(os.path.join(args.normalized_dir, 'test_normalized.tsv'), sep='\t', index=False, header=False)
-    print('Normalized dataset saved at', os.path.abspath(args.normalized_dir))
-'''
-    y_train = torch.tensor(train_df[2].values, dtype=torch.float32)
-    y_valid = torch.tensor(valid_df[2].values, dtype=torch.float32)
-    y_test = torch.tensor(test_df[2].values, dtype=torch.float32)
-    torch.save(y_train, os.path.join(args.embedded_dir, 'y_train.pt'))
-    torch.save(y_valid, os.path.join(args.embedded_dir, 'y_valid.pt'))
-    torch.save(y_test, os.path.join(args.embedded_dir, 'y_test.pt'))
-
-    print('Loading pretrained bert model and tokenizer...', end=' ')
-    embedding_type = args.embedding_type
-    pretrained_bert = args.pretrained_bert
-    model, tokenizer = load_pretrained_bert(pretrained_bert)
-    print('done')
-
-    print(f'Extracting features ({embedding_type}) of train set...', end=' ')
-    X_train = series_extract_features(train_df[1],
-                                      option=embedding_type,
-                                      bert_tokenizer=tokenizer,
-                                      bert_model=model,
-                                      return_tensors='pt')
-    print('done')
-    print(f'Extracting features ({embedding_type}) of valid set...', end=' ')
-    X_valid = series_extract_features(valid_df[1],
-                                      option=embedding_type,
-                                      bert_tokenizer=tokenizer,
-                                      bert_model=model,
-                                      return_tensors='pt')
-    print('done')
-    print(f'Extracting features ({embedding_type}) of test set...', end=' ')
-    X_test = series_extract_features(test_df[1],
-                                     option=embedding_type,
-                                     bert_tokenizer=tokenizer,
-                                     bert_model=model,
-                                     return_tensors='pt')
-    print('done')
-    torch.save(X_train, os.path.join(args.embedded_dir, f"X_train_{pretrained_bert}_{embedding_type}.pt"))
-    torch.save(X_valid, os.path.join(args.embedded_dir, f"X_valid_{pretrained_bert}_{embedding_type}.pt"))
-    torch.save(X_test, os.path.join(args.embedded_dir, f"X_test_{pretrained_bert}_{embedding_type}.pt"))
-    print('Feature tensors saved at', os.path.abspath(args.embedded_dir))
-'''
+    run(pretrained_bert_name=args.pretrained_bert,
+        train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit,
+        to_ascii=args.to_ascii, to_lower=args.to_lower, keep_emojis=args.keep_emojis)

@@ -4,6 +4,5 @@
   "pad_to_max_length": true,
   "return_attention_mask": true,
   "return_tensors": "pt",
-  "truncation": true,
-  "cased": false
+  "truncation": true
 }

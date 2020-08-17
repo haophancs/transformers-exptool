@@ -19,9 +19,6 @@ class BertDataset(Dataset):
         self.tokenizer = tokenizer
         self.encode_config = encode_config
         self.texts = np.vectorize(lambda txt: str(txt))(texts)
-        if 'cased' in encode_config and not encode_config['cased']:
-            del encode_config['cased']
-            self.texts = np.char.lower(self.texts)
 
     def __len__(self):
         return len(self.texts)
