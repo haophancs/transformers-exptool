@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from sklearn.metrics import f1_score, classification_report, precision_score, recall_score, accuracy_score
 from torch import nn
 from transformers import AdamW, get_linear_schedule_with_warmup
-from transformers import AutoModelForSequenceClassification, RobertaForSequenceClassification
+from transformers import AutoModelForSequenceClassification
 
 from utils import __models_path__, __dataset_path__
 from utils.dataset import create_data_loader, BertDataset

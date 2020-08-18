@@ -1,7 +1,6 @@
 import argparse
 from utils.pretrained import PretrainedOptionsAvailable
 from utils.modeling import bert_clf
-import prepare_data
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -90,7 +90,7 @@ def handle_abbreviations(norm_tweet):
 
 def handle_hashtag(norm_tweet):
     for hashtag in re.findall(r"#(\w+)", norm_tweet):
-        if hashtag.lower().startwith('covid'):
+        if hashtag.lower().startswith('covid'):
             norm_tweet = norm_tweet.replace(f'#{hashtag}', "#" + seg_tw.segment(hashtag))
         else:
             norm_tweet = norm_tweet.replace(f'#{hashtag}', seg_tw.segment(hashtag))
@@ -128,6 +128,7 @@ def normalize_token(token, keep_emojis=True, username="@USER", httpurl="httpurl"
 def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, username="@USER",
                    httpurl="httpurl") -> str:
     norm_tweet = re.sub(r"(covid.19)", " COVID19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"# COVID19", "#COVID19", norm_tweet, flags=re.I)
     norm_tweet = handle_special_characters(norm_tweet)
     norm_tweet = handle_contractions(norm_tweet)
     norm_tweet = handle_abbreviations(norm_tweet)
@@ -142,7 +143,7 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
                                            httpurl=httpurl) for token in tokens])
     if '...' not in norm_tweet:
         norm_tweet = norm_tweet.replace('..', ' ... ')
-    norm_tweet = norm_tweet.replace(' \"\"', ' \"').replace('\"\" ', '\" ')
+    #norm_tweet = norm_tweet.replace(' \"\"', ' \"').replace('\"\" ', '\" ')
 
     norm_tweet = norm_tweet.replace("n't ", " n't ").replace("n 't ", " n't ").replace("n ' t ", " n't ")
     norm_tweet = norm_tweet.replace("cannot ", "can not ").replace("ca n't", "can not")
@@ -151,12 +152,13 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
     norm_tweet = norm_tweet.replace("'ll ", " will ").replace("'d ", " would ").replace("'ve ", " have ")
     norm_tweet = norm_tweet.replace(" p . m .", "  p.m.").replace(" p . m ", " p.m ")
     norm_tweet = norm_tweet.replace(" a . m .", " a.m.").replace(" a . m ", " a.m ")
+    norm_tweet = norm_tweet.replace('\"\"', ' ')
 
     norm_tweet = re.sub(r",([0-9]{2,4}) , ([0-9]{2,4})", r",\1,\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3}) / ([0-9]{2,4})", r"\1/\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3})- ([0-9]{2,4})", r"\1-\2", norm_tweet)
 
-    norm_tweet = re.sub(r"(covid.19)", "COVID-19", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"(covid.19)", "COVID19", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
 
     if to_ascii:

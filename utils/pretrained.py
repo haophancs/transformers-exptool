@@ -44,8 +44,9 @@ def BERTweetModel(additional_config):
 
 class BERTweetTokenizer:
     def __init__(self):
-        self.__vocab = Dictionary()
-        self.__vocab.add_from_file(os.path.join(pretrained_prefix, "vinai/bertweet-base/dict.txt"))
+        self._bpe = fastBPE(args)
+        self._vocab = Dictionary()
+        self._vocab.add_from_file(os.path.join(pretrained_prefix, "vinai/bertweet-base/dict.txt"))
 
     @staticmethod
     def _pad_input_ids(input_ids, max_length):
@@ -59,9 +60,8 @@ class BERTweetTokenizer:
         return attention_mask
 
     def encode(self, text: str, append_eos=False) -> List[str]:
-        bpe = fastBPE(args)
-        subwords = '<s> ' + bpe.encode(text) + ' </s>'
-        input_ids = self.__vocab.encode_line(subwords, append_eos=append_eos, add_if_not_exist=False).long().tolist()
+        subwords = '<s> ' + self._bpe.encode(text) + ' </s>'
+        input_ids = self._vocab.encode_line(subwords, append_eos=append_eos, add_if_not_exist=False).long().tolist()
         return input_ids
 
     def encode_plus(self,
