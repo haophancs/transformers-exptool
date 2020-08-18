@@ -1,4 +1,7 @@
 #!/bin/sh
+sudo add-apt-repository ppa:openjdk-r/ppa
+sudo apt-get update
+sudo apt-get install openjdk-8-jre openjdk-8-jdk
 pip install -r requirements.txt
 
 mkdir -p models/pretrained/vinai
