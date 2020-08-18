@@ -153,6 +153,7 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
     norm_tweet = re.sub(r"([0-9]{1,3}) / ([0-9]{2,4})", r"\1/\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3})- ([0-9]{2,4})", r"\1-\2", norm_tweet)
 
+    norm_tweet = re.sub(r"(covid.19)", "COVID-19", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
 
     if to_ascii:
