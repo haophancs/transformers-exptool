@@ -150,7 +150,7 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
     norm_tweet = norm_tweet.replace("'ll ", " will ").replace("'d ", " would ").replace("'ve ", " have ")
     norm_tweet = norm_tweet.replace(" p . m .", "  p.m.").replace(" p . m ", " p.m ")
     norm_tweet = norm_tweet.replace(" a . m .", " a.m.").replace(" a . m ", " a.m ")
-    norm_tweet = norm_tweet.replace('\"\"', ' ')
+    # norm_tweet = norm_tweet.replace('\"\"', ' ')
 
     norm_tweet = re.sub(r",([0-9]{2,4}) , ([0-9]{2,4})", r",\1,\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3}) / ([0-9]{2,4})", r"\1/\2", norm_tweet)
