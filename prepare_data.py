@@ -16,8 +16,8 @@ def run(pretrained_bert_name,
         to_lower=None, to_ascii=None, keep_emojis=None, username=None, httpurl=None):
     print('Loading dataset...', end=' ')
     train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None)[:train_limit].drop(columns=[0])
-    valid_df = pd.read_csv('./data/raw/valid.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
-    test_df = pd.read_csv('./data/raw/test.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
+    valid_df = pd.read_csv('data/raw/test.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
+    test_df = pd.read_csv('data/raw/valid.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
     print('done')
 
     additional_config_dirpath = f'./config/bert-reconfig/{pretrained_bert_name}'
