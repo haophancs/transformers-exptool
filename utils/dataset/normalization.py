@@ -90,10 +90,7 @@ def handle_abbreviations(norm_tweet):
 
 def handle_hashtag(norm_tweet):
     for hashtag in re.findall(r"#(\w+)", norm_tweet):
-        if hashtag.lower().startswith('covid'):
-            norm_tweet = norm_tweet.replace(f'#{hashtag}', "#" + seg_tw.segment(hashtag))
-        else:
-            norm_tweet = norm_tweet.replace(f'#{hashtag}', seg_tw.segment(hashtag))
+        norm_tweet = norm_tweet.replace(f'#{hashtag}', '#'+seg_tw.segment(hashtag))
     return norm_tweet
 
 
@@ -127,8 +124,10 @@ def normalize_token(token, keep_emojis=True, username="@USER", httpurl="httpurl"
 
 def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, username="@USER",
                    httpurl="httpurl") -> str:
-    norm_tweet = re.sub(r"(covid.19)", " COVID19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"(covid.19)", "COVID19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"covid19", " COVID19 ", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r"# COVID19", "#COVID19", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
     norm_tweet = handle_special_characters(norm_tweet)
     norm_tweet = handle_contractions(norm_tweet)
     norm_tweet = handle_abbreviations(norm_tweet)
@@ -143,7 +142,6 @@ def normalize_text(norm_tweet, to_ascii=True, to_lower=False, keep_emojis=True, 
                                            httpurl=httpurl) for token in tokens])
     if '...' not in norm_tweet:
         norm_tweet = norm_tweet.replace('..', ' ... ')
-    #norm_tweet = norm_tweet.replace(' \"\"', ' \"').replace('\"\" ', '\" ')
 
     norm_tweet = norm_tweet.replace("n't ", " n't ").replace("n 't ", " n't ").replace("n ' t ", " n't ")
     norm_tweet = norm_tweet.replace("cannot ", "can not ").replace("ca n't", "can not")
