@@ -196,6 +196,12 @@ def normalize_text(norm_tweet,
                    httpurl="httpurl") -> str:
     if to_lower:
         norm_tweet = norm_tweet.lower()
+
+    norm_tweet = normalize_special_characters(norm_tweet)
+    norm_tweet = normalize_punctuation(norm_tweet)
+    norm_tweet = normalize_contractions(norm_tweet)
+    norm_tweet = normalize_abbreviations(norm_tweet)
+
     tokens = w_tokenizer.tokenize(norm_tweet)
     norm_tweet = " ".join([normalize_token(token,
                                            keep_emojis=keep_emojis,
@@ -210,10 +216,6 @@ def normalize_text(norm_tweet,
     norm_tweet = re.sub(r"# COVID19", "#COVID19", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
 
-    norm_tweet = normalize_special_characters(norm_tweet)
-    norm_tweet = normalize_punctuation(norm_tweet)
-    norm_tweet = normalize_contractions(norm_tweet)
-    norm_tweet = normalize_abbreviations(norm_tweet)
     if segment_hashtag:
         norm_tweet = normalize_hashtag(norm_tweet)
     p.set_options(p.OPT.RESERVED, p.OPT.SMILEY)
