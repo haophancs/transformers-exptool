@@ -13,7 +13,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class BertDataset(Dataset):
 
-    def __init__(self, texts, labels, tokenizer, encode_config):
+    def __init__(self, texts, tokenizer, encode_config, labels=None):
         self.texts = texts
         self.labels = labels
         self.tokenizer = tokenizer
@@ -25,17 +25,20 @@ class BertDataset(Dataset):
 
     def __getitem__(self, item):
         text = str(self.texts[item])
-        label = self.labels[item]
+        if self.labels is not None:
+            label = self.labels[item]
+        else:
+            label = None
         encoded = self.tokenizer.encode_plus(
             text,
             **self.encode_config
         )
-        dataset = {
-            'text': text,
-            'input_ids': encoded['input_ids'].flatten(),
-            'attention_mask': encoded['attention_mask'].flatten(),
-            'label': torch.tensor(label, dtype=torch.long)
-        }
+        dataset = dict()
+        dataset['text'] = text
+        dataset['input_ids'] = encoded['input_ids'].flatten()
+        dataset['attention_mask'] = encoded['attention_mask'].flatten()
+        if label is not None:
+            dataset['label'] = torch.tensor(label, dtype=torch.long)
         return dataset
 
 
@@ -109,12 +112,13 @@ class BertEmbeddedDataset(Dataset):
                                        pretrained_bert_name=pretrained_bert_name)
 
 
-def create_data_loader(dataset, batch_size, num_workers=None):
+def create_data_loader(dataset, batch_size, shuffle=True, num_workers=None):
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
 
     return DataLoader(
         dataset,
         batch_size=batch_size,
+        shuffle=shuffle,
         num_workers=num_workers
     )

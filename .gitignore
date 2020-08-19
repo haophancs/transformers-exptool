@@ -1,10 +1,10 @@
 *.csv
 *.tsv
 *.bin
+*.pyc
 !data/raw/*.tsv
 !data/normalized/*.tsv
 *.pt
 models/*
-util
 .idea
 wandb

@@ -16,8 +16,8 @@ def run(pretrained_bert_name,
         to_lower=None, to_ascii=None, keep_emojis=None, username=None, httpurl=None):
     print('Loading dataset...', end=' ')
     train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None)[:train_limit].drop(columns=[0])
-    valid_df = pd.read_csv('data/raw/test.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
-    test_df = pd.read_csv('data/raw/valid.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
+    valid_df = pd.read_csv('data/raw/valid.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
+    test_df = pd.read_csv('data/raw/test.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
     print('done')
 
     additional_config_dirpath = f'./config/bert-reconfig/{pretrained_bert_name}'
@@ -46,7 +46,8 @@ def run(pretrained_bert_name,
     print('Mapping label...', end=' ')
     train_df[2] = train_df[2].apply(lambda label: label_map[label])
     valid_df[2] = valid_df[2].apply(lambda label: label_map[label])
-    test_df[2] = test_df[2].apply(lambda label: label_map[label])
+    if 2 in test_df.columns:
+        test_df[2] = test_df[2].apply(lambda label: label_map[label])
     print('done')
 
     train_df.to_csv(os.path.join('./data/normalized/', 'train_normalized.tsv'), sep='\t', index=False, header=False)
