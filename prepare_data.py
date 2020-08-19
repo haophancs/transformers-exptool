@@ -15,9 +15,15 @@ def run(pretrained_bert_name,
         train_limit=-1, valid_limit=-1, test_limit=-1,
         to_lower=None, to_ascii=None, keep_emojis=None, username=None, httpurl=None, segment_hashtag=None):
     print('Loading dataset...', end=' ')
-    train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None)[:train_limit].drop(columns=[0])
-    valid_df = pd.read_csv('data/raw/valid.tsv', sep='\t', header=None)[:valid_limit].drop(columns=[0])
-    test_df = pd.read_csv('data/raw/test.tsv', sep='\t', header=None)[:test_limit].drop(columns=[0])
+    train_df = pd.read_csv('./data/raw/train.tsv', sep='\t', header=None).drop(columns=[0])
+    valid_df = pd.read_csv('data/raw/valid.tsv', sep='\t', header=None).drop(columns=[0])
+    test_df = pd.read_csv('data/raw/test.tsv', sep='\t', header=None).drop(columns=[0])
+    if train_limit > 0:
+        train_df = train_df[:train_limit]
+    if valid_limit > 0:
+        valid_df = valid_df[:valid_limit]
+    if test_limit > 0:
+        test_df = test_df[:test_limit]
     print('done')
 
     additional_config_dirpath = f'./config/bert-reconfig/{pretrained_bert_name}'

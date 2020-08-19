@@ -386,7 +386,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             print()
             print()
         now = datetime.now()
-        dt_string = now.strftime("%H:%M-%d/%m")
+        dt_string = now.strftime("%H:%M-%d-%m")
         with open(os.path.join(
                 __models_path__,
                 f'{pretrained_bert_name}/history_{dt_string}.json'),

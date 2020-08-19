@@ -7,5 +7,4 @@
 *.pt
 models/*
 .idea
-split_data1.ipynb
 wandb
