@@ -2,7 +2,7 @@
   "to_lower": false,
   "to_ascii": true,
   "keep_emojis": true,
-  "tweet_optimized": true,
+  "segment_hashtag": false,
   "username": "@USER",
   "httpurl": "HTTPURL"
 }

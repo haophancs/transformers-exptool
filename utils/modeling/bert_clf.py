@@ -1,7 +1,9 @@
 import os
 import gc
+import json
 import random
 from collections import defaultdict
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -122,6 +124,51 @@ def eval_epoch(model, data_loader, device):
     return f1, precision, recall, accuracy, np.mean(losses)
 
 
+def predict_loaded_model(model, data_loader, random_state, device=device):
+    random.seed(random_state)
+    np.random.seed(random_state)
+    torch.manual_seed(random_state)
+    torch.cuda.manual_seed_all(random_state)
+    model = model.to(device)
+    model = model.eval()
+
+    texts = []
+    predictions = []
+    prediction_probs = []
+    real_labels = []
+
+    with_labels = "label" in data_loader[0]
+
+    with torch.no_grad():
+        for d in data_loader:
+            texts = d["text"]
+            input_ids = d["input_ids"].to(device)
+            attention_mask = d["attention_mask"].to(device)
+            if with_labels:
+                targets = d["label"].to(device)
+
+            logits = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask
+            )[0]
+            _, preds = torch.max(logits, dim=1)
+
+            probs = F.softmax(logits, dim=1)
+
+            texts.extend(texts)
+            predictions.extend(preds)
+            prediction_probs.extend(probs)
+            if with_labels:
+                real_labels.extend(targets)
+
+    predictions = torch.stack(predictions).cpu()
+    prediction_probs = torch.stack(prediction_probs).cpu()
+    if with_labels:
+        real_labels = torch.stack(real_labels).cpu()
+        return texts, predictions, prediction_probs, real_labels
+    return texts, predictions, prediction_probs
+
+
 def predict(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
             test_ds_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
     random.seed(random_state)
@@ -151,42 +198,7 @@ def predict(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, 
                          f'./{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'),
             map_location=device)
     )
-    model = model.to(device)
-    model = model.eval()
-
-    texts = []
-    predictions = []
-    prediction_probs = []
-    real_labels = []
-
-    with torch.no_grad():
-        for d in test_data_loader:
-            texts = d["text"]
-            input_ids = d["input_ids"].to(device)
-            attention_mask = d["attention_mask"].to(device)
-            if with_labels:
-                targets = d["label"].to(device)
-
-            logits = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask
-            )[0]
-            _, preds = torch.max(logits, dim=1)
-
-            probs = F.softmax(logits, dim=1)
-
-            texts.extend(texts)
-            predictions.extend(preds)
-            prediction_probs.extend(probs)
-            if with_labels:
-                real_labels.extend(targets)
-
-    predictions = torch.stack(predictions).cpu()
-    prediction_probs = torch.stack(prediction_probs).cpu()
-    if with_labels:
-        real_labels = torch.stack(real_labels).cpu()
-        return texts, predictions, prediction_probs, real_labels
-    return texts, predictions, prediction_probs
+    return predict_loaded_model(model=model, data_loader=test_data_loader, random_state=random_state, device=device)
 
 
 def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
@@ -281,7 +293,7 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
             'recall': val_recall,
             'accuracy': val_accuracy
         }
-        print('Train:', val_report)
+        print('Valid:', val_report)
         print()
 
         history['train_f1'].append(train_f1)
@@ -325,22 +337,25 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                            sep='\t',
                            header=None)  # check
     print('Using pretrained bert model:', pretrained_bert_name)
-    print('Params = {',
-          f'batch_size: {batch_size},',
-          f'learning_rate: {learning_rate},',
-          f'epochs: {epochs},',
-          f'random_state: {random_state}',
-          f"max sequence length: {encode_config['max_length']}",
-          '}')
+    params = {
+        'pretrained_bert': pretrained_bert_name,
+        'batch_size': batch_size,
+        'learning_rate': learning_rate,
+        'random_state': random_state,
+        'max_seq': encode_config['max_length']
+    }
+    print('Params =', params)
+    models = []
+    histories = []
     if kfold_num != 0:
         kf = StratifiedKFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
         data = pd.concat([train_df, valid_df]).reset_index(drop=True)
-        histories = []
-        models = []
-        for train_indices, val_indices in kf.split(data, y=data[1].values):
+        for k_th, split_indices in enumerate(kf.split(data, y=data[1].values)):
+            train_indices, val_indices = split_indices
             train_df = data.iloc[train_indices]
             valid_df = data.iloc[val_indices]
-            print("--------------------------NEW KFOLD------------------------------")
+            print(f"{k_th + 1}th "
+                  "KFOLD----------------------------------------------------------------------------------------------")
             print("Train dataset's info:")
             print(train_df.info())
             print(train_df[1].value_counts())
@@ -367,10 +382,17 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                     epochs=epochs,
                                     random_state=random_state,
                                     device=device)
+            history['params'] = params
+            history['params']['k_th'] = k_th
             models.append(model)
             histories.append(history)
             print()
-        return models, histories
+            print()
+        now = datetime.now()
+        dt_string = now.strftime("%H:%S_%d-%m")
+        with open(os.path.join(__models_path__, f'{pretrained_bert_name}/history_{dt_string}.json'),
+                  'w') as fout:
+            json.dump(histories, fout)
     else:
         print("Train dataset's info:")
         print(train_df.info())
@@ -398,4 +420,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                 epochs=epochs,
                                 random_state=random_state,
                                 device=device)
-        return [model], [history]
+        # return [model], [history]
+        models.append(model)
+        histories.append(history)
+    return models, histories
