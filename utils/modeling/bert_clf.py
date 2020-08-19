@@ -2,6 +2,7 @@ import os
 import gc
 import json
 import random
+from datetime import datetime
 from collections import defaultdict
 
 import numpy as np
@@ -263,9 +264,6 @@ def train_util(pretrained_bert_name, train_data_loader, valid_data_loader, mode=
     )
 
     history = defaultdict(list)
-    if mode == 'tuning':
-        history['model_paths'].append("")
-
     for epoch in range(epochs):
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 20)
@@ -304,11 +302,11 @@ def train_util(pretrained_bert_name, train_data_loader, valid_data_loader, mode=
         history['train_reports'].append(train_report)
         history['val_reports'].append(val_report)
 
-        if epoch >= 1 and mode == 'tuning':
-            path_to_save = os.path.join(save_path_prefix, f"model_epoch_{epoch}.bin")
+        if mode == 'tuning':
+            path_to_save = os.path.join(save_path_prefix, f"model_epoch_{epoch + 1}.bin")
             torch.save(model.state_dict(), path_to_save)
             history["model_paths"].append(path_to_save)
-            print(f'State of model after epoch {epoch} saved at', path_to_save)
+            print(f'State of model after epoch {epoch + 1} saved at', path_to_save)
         print()
 
     model_cpu = model.to(torch.device('cpu'))
@@ -372,23 +370,26 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                         encode_config=encode_config)
             train_data_loader = create_data_loader(train_dataset, batch_size)
             valid_data_loader = create_data_loader(valid_dataset, batch_size)
-            model, history = train_util(pretrained_bert_name=pretrained_bert_name,
-                                        train_data_loader=train_data_loader,
-                                        valid_data_loader=valid_data_loader,
-                                        batch_size=batch_size,
-                                        learning_rate=learning_rate,
-                                        epochs=epochs,
-                                        random_state=random_state,
-                                        device=device,
-                                        mode="tuning",
-                                        kth_fold=kth_fold)
+            history = train_util(pretrained_bert_name=pretrained_bert_name,
+                                 train_data_loader=train_data_loader,
+                                 valid_data_loader=valid_data_loader,
+                                 batch_size=batch_size,
+                                 learning_rate=learning_rate,
+                                 epochs=epochs,
+                                 random_state=random_state,
+                                 device=device,
+                                 mode="tuning",
+                                 kth_fold=kth_fold)
             history['params'] = params
             history['params']['kth_fold'] = kth_fold
             histories.append(history)
             print()
             print()
-        with open(os.path.join(__models_path__,
-                               f'{pretrained_bert_name}/tuning/history.json'),
+        now = datetime.now()
+        dt_string = now.strftime("%H:%M-%d/%m")
+        with open(os.path.join(
+                __models_path__,
+                f'{pretrained_bert_name}/history_{dt_string}.json'),
                   'w') as fout:
             json.dump(histories, fout)
         return histories
