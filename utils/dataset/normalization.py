@@ -236,13 +236,14 @@ def normalize_text(norm_tweet,
     norm_tweet = re.sub(r"([0-9]{1,3})- ([0-9]{2,4})", r"\1-\2", norm_tweet)
 
     norm_tweet = re.sub(r"(covid.19)", "COVID19", norm_tweet, flags=re.I)
-    norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
+    norm_tweet = re.sub(r"\"\"", "", norm_tweet, flags=re.I)
 
     if to_ascii:
         norm_tweet = ''.join(ch for ch in norm_tweet if unicodedata.category(ch)[0] != 'So')
         norm_tweet = unicodedata.normalize('NFKD', norm_tweet).encode('ascii', 'ignore').decode('utf-8')
     if to_lower:
         norm_tweet = norm_tweet.lower()
+    norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
     return norm_tweet
 
 

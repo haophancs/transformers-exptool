@@ -247,7 +247,8 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
     model = load_sequence_classification_model(pretrained_bert_name)
     model = model.to(device)
 
-    optimizer = AdamW(model.parameters(), lr=learning_rate, correct_bias=False, weight_decay=0.00001)
+    weight_decay = 0.00001
+    optimizer = AdamW(model.parameters(), lr=learning_rate, correct_bias=False, weight_decay=weight_decay)
     total_steps = len(train_data_loader) * epochs
 
     scheduler = get_linear_schedule_with_warmup(
@@ -328,7 +329,7 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
 def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
           train_ds_path=os.path.join(__dataset_path__, 'normalized/train_normalized.tsv'),
           valid_ds_path=os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
-          kfold_num=0):
+          kfold_num=0, kth_fold=None):
     tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
     train_df = pd.read_csv(train_ds_path,
                            sep='\t',
@@ -354,7 +355,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             train_indices, val_indices = split_indices
             train_df = data.iloc[train_indices]
             valid_df = data.iloc[val_indices]
-            print(f"{k_th + 1}th "
+            print(f"{k_th}th "
                   "KFOLD----------------------------------------------------------------------------------------------")
             print("Train dataset's info:")
             print(train_df.info())
@@ -394,6 +395,13 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                   'w') as fout:
             json.dump(histories, fout)
     else:
+        if kth_fold is not None:
+            kf = StratifiedKFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
+            data = pd.concat([train_df, valid_df]).reset_index(drop=True)
+            train_indices, val_indices = list(kf.split(data, y=data[1].values))
+            train_df = data.iloc[train_indices]
+            valid_df = data.iloc[val_indices]
+            print(f"Split dataset by kfold, using {kth_fold} fold, random state = {random_state}")
         print("Train dataset's info:")
         print(train_df.info())
         print(train_df[1].value_counts())
