@@ -174,8 +174,8 @@ def predict_loaded_model(model, tokenizer, encode_config,
     return texts, predictions, prediction_probs, real_labels
 
 
-def predict(pretrained_bert_name, from_training=True, k_fold=None,
-            batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
+def predict(pretrained_bert_name, model_path,
+            batch_size=16, random_state=42, device=device,
             df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
     random.seed(random_state)
     np.random.seed(random_state)
@@ -184,28 +184,18 @@ def predict(pretrained_bert_name, from_training=True, k_fold=None,
     model = load_sequence_classification_model(pretrained_bert_name)
     tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
 
-    # models/vinai/bertweet-base/tuning/16_2e-5_4_42/non_kfold
-    model_path = os.path.join(__models_path__, pretrained_bert_name)
-    model_path = os.path.join(model_path, f"{batch_size}_{epochs}_")
-
-    model.load_state_dict(
-        torch.load(
-            os.path.join(__models_path__,
-                         f'./{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'),
-            map_location=device)
-    )
+    model.load_state_dict(torch.load(model_path, map_location=device))
     return predict_loaded_model(model=model, tokenizer=tokenizer, encode_config=encode_config,
                                 df_path=df_path,
                                 batch_size=batch_size, random_state=random_state, device=device)
 
 
-def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
+def eval(pretrained_bert, model_path, batch_size=16, random_state=42, device=device,
          df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
     y_review_texts, y_pred, y_pred_probs, y_test = predict(
         pretrained_bert_name=pretrained_bert,
         batch_size=batch_size,
-        learning_rate=learning_rate,
-        epochs=epochs,
+        model_path=model_path,
         random_state=random_state,
         device=device,
         df_path=df_path
