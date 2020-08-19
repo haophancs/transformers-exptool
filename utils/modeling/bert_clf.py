@@ -7,8 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from sklearn.metrics import f1_score, classification_report, precision_score, recall_score, accuracy_score, \
-    confusion_matrix
+from sklearn.metrics import f1_score, classification_report, precision_score, recall_score, accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from torch import nn
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -61,10 +60,10 @@ def train_epoch(
         )
 
         _, preds = torch.max(logits, dim=1)
-        b_tn, b_fp, b_fn, b_tp = confusion_matrix(
+        b_tp, b_fp, b_tn, b_fn = perf_measure(
             targets.detach().cpu().numpy(),
             preds.detach().cpu().numpy()
-        ).ravel()
+        )
         tn += b_tn
         fp += b_fp
         fn += b_fn
@@ -105,10 +104,10 @@ def eval_epoch(model, data_loader, device):
                 labels=targets
             )
             _, preds = torch.max(logits, dim=1)
-            b_tn, b_fp, b_fn, b_tp = confusion_matrix(
+            b_tp, b_fp, b_tn, b_fn = perf_measure(
                 targets.detach().cpu().numpy(),
                 preds.detach().cpu().numpy()
-            ).ravel()
+            )
             tn += b_tn
             fp += b_fp
             fn += b_fn
@@ -206,7 +205,24 @@ def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_s
     print('Recall   :', recall_score(y_test, y_pred))
     print('Accuracy :', accuracy_score(y_test, y_pred))
     print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
+
+
+def perf_measure(y_true, y_pred):
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+
+    for i in range(len(y_pred)):
+        if y_true[i] == y_pred[i] == 1:
+            TP += 1
+        if y_pred[i] == 1 and y_true[i] != y_pred[i]:
+            FP += 1
+        if y_true[i] == y_pred[i] == 0:
+            TN += 1
+        if y_pred[i] == 0 and y_true[i] != y_pred[i]:
+            FN += 1
+    return TP, FP, TN, FN
 
 
 def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
@@ -219,7 +235,7 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
     model = load_sequence_classification_model(pretrained_bert_name)
     model = model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.00001)
+    optimizer = AdamW(model.parameters(), lr=learning_rate, correct_bias=False, weight_decay=0.00001)
     total_steps = len(train_data_loader) * epochs
 
     scheduler = get_linear_schedule_with_warmup(
