@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, classification_report, precision_score, recall_score, accuracy_score, \
     confusion_matrix
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from torch import nn
 from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers import AutoModelForSequenceClassification
@@ -61,12 +61,14 @@ def train_epoch(
         )
 
         _, preds = torch.max(logits, dim=1)
-        conf_mat = confusion_matrix(f1_score(targets.detach().cpu().numpy(),
-                                             preds.detach().cpu().numpy()))
-        tn += conf_mat[0][0]
-        fp += conf_mat[0][1]
-        fn += conf_mat[1][0]
-        tp += conf_mat[1][1]
+        b_tn, b_fp, b_fn, b_tp = confusion_matrix(
+            targets.detach().cpu().numpy(),
+            preds.detach().cpu().numpy()
+        ).ravel()
+        tn += b_tn
+        fp += b_fp
+        fn += b_fn
+        tp += b_tp
 
         losses.append(loss.item())
 
@@ -103,12 +105,14 @@ def eval_epoch(model, data_loader, device):
                 labels=targets
             )
             _, preds = torch.max(logits, dim=1)
-            conf_mat = confusion_matrix(f1_score(targets.detach().cpu().numpy(),
-                                                 preds.detach().cpu().numpy()))
-            tn += conf_mat[0][0]
-            fp += conf_mat[0][1]
-            fn += conf_mat[1][0]
-            tp += conf_mat[1][1]
+            b_tn, b_fp, b_fn, b_tp = confusion_matrix(
+                targets.detach().cpu().numpy(),
+                preds.detach().cpu().numpy()
+            ).ravel()
+            tn += b_tn
+            fp += b_fp
+            fn += b_fn
+            tp += b_tp
 
             losses.append(loss.item())
 
@@ -215,7 +219,7 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
     model = load_sequence_classification_model(pretrained_bert_name)
     model = model.to(device)
 
-    optimizer = AdamW(model.parameters(), lr=learning_rate, correct_bias=False)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.00001)
     total_steps = len(train_data_loader) * epochs
 
     scheduler = get_linear_schedule_with_warmup(
@@ -313,11 +317,11 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
           f"max sequence length: {encode_config['max_length']}",
           '}')
     if kfold_num != 0:
-        kf = KFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
+        kf = StratifiedKFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
         data = pd.concat([train_df, valid_df]).reset_index(drop=True)
         histories = []
         models = []
-        for train_indices, val_indices in kf.split(data):
+        for train_indices, val_indices in kf.split(data, y=data[1].values):
             train_df = data.iloc[train_indices]
             valid_df = data.iloc[val_indices]
             print("--------------------------NEW KFOLD------------------------------")
@@ -350,6 +354,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             models.append(model)
             histories.append(history)
             print()
+        return models, histories
     else:
         print("Train dataset's info:")
         print(train_df.info())
@@ -377,4 +382,4 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                 epochs=epochs,
                                 random_state=random_state,
                                 device=device)
-        return model, history
+        return [model], [history]
