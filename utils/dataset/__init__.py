@@ -3,8 +3,10 @@ import os
 import torch
 import pickle
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 from utils.dataset.embedding import last_layer_features, text_vector
+from utils.pretrained import load_pretrained_tokenization
 from utils import __dataset_path__
 
 dataset_prefix = os.path.join(__dataset_path__, 'embedded')
@@ -12,6 +14,26 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class BertDataset(Dataset):
+
+    @staticmethod
+    def from_df(df_path, pretrained_bert_name):
+        test_df = pd.read_csv(df_path,
+                              sep='\t',
+                              header=None)  # check
+        tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
+
+        with_labels = 1 in test_df.columns
+        if with_labels:
+            dataset = BertDataset(texts=test_df[0].values,
+                                  labels=test_df[1].values,
+                                  tokenizer=tokenizer,
+                                  encode_config=encode_config)
+        else:
+            dataset = BertDataset(texts=test_df[0].values,
+                                  tokenizer=tokenizer,
+                                  encode_config=encode_config,
+                                  labels=None)
+        return dataset
 
     def __init__(self, texts, tokenizer, encode_config, labels=None):
         self.texts = texts

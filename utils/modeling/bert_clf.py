@@ -3,7 +3,6 @@ import gc
 import json
 import random
 from collections import defaultdict
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -124,11 +123,23 @@ def eval_epoch(model, data_loader, device):
     return f1, precision, recall, accuracy, np.mean(losses)
 
 
-def predict_loaded_model(model, data_loader, random_state, device=device):
+def predict_loaded_model(model, tokenizer, encode_config,
+                         df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv'),
+                         batch_size=16, random_state=42, device=device):
     random.seed(random_state)
     np.random.seed(random_state)
     torch.manual_seed(random_state)
     torch.cuda.manual_seed_all(random_state)
+
+    df = pd.read_csv(df_path,
+                     sep='\t',
+                     header=None)  # check
+    dataset = BertDataset(texts=df[0].values,
+                          labels=df[1].values,
+                          tokenizer=tokenizer,
+                          encode_config=encode_config)
+    data_loader = create_data_loader(dataset, batch_size)
+
     model = model.to(device)
     model = model.eval()
 
@@ -137,15 +148,12 @@ def predict_loaded_model(model, data_loader, random_state, device=device):
     prediction_probs = []
     real_labels = []
 
-    with_labels = "label" in data_loader[0]
-
     with torch.no_grad():
         for d in data_loader:
             texts = d["text"]
             input_ids = d["input_ids"].to(device)
             attention_mask = d["attention_mask"].to(device)
-            if with_labels:
-                targets = d["label"].to(device)
+            targets = d["label"].to(device)
 
             logits = model(
                 input_ids=input_ids,
@@ -158,51 +166,41 @@ def predict_loaded_model(model, data_loader, random_state, device=device):
             texts.extend(texts)
             predictions.extend(preds)
             prediction_probs.extend(probs)
-            if with_labels:
-                real_labels.extend(targets)
+            real_labels.extend(targets)
 
     predictions = torch.stack(predictions).cpu()
     prediction_probs = torch.stack(prediction_probs).cpu()
-    if with_labels:
-        real_labels = torch.stack(real_labels).cpu()
-        return texts, predictions, prediction_probs, real_labels
-    return texts, predictions, prediction_probs
+    real_labels = torch.stack(real_labels).cpu()
+    return texts, predictions, prediction_probs, real_labels
 
 
-def predict(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
-            test_ds_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
+def predict(pretrained_bert_name, from_training=True, k_fold=None,
+            batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
+            df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
     random.seed(random_state)
     np.random.seed(random_state)
     torch.manual_seed(random_state)
     torch.cuda.manual_seed_all(random_state)
-    test_df = pd.read_csv(test_ds_path,
-                          sep='\t',
-                          header=None)  # check
+    model = load_sequence_classification_model(pretrained_bert_name)
     tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
 
-    with_labels = 1 in test_df.columns
-    if with_labels:
-        test_dataset = BertDataset(texts=test_df[0].values,
-                                   labels=test_df[1].values,
-                                   tokenizer=tokenizer,
-                                   encode_config=encode_config)
-    else:
-        test_dataset = BertDataset(texts=test_df[0].values,
-                                   tokenizer=tokenizer,
-                                   encode_config=encode_config)
-    test_data_loader = create_data_loader(test_dataset, batch_size)
-    model = load_sequence_classification_model(pretrained_bert_name)
+    # models/vinai/bertweet-base/tuning/16_2e-5_4_42/non_kfold
+    model_path = os.path.join(__models_path__, pretrained_bert_name)
+    model_path = os.path.join(model_path, f"{batch_size}_{epochs}_")
+
     model.load_state_dict(
         torch.load(
             os.path.join(__models_path__,
                          f'./{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'),
             map_location=device)
     )
-    return predict_loaded_model(model=model, data_loader=test_data_loader, random_state=random_state, device=device)
+    return predict_loaded_model(model=model, tokenizer=tokenizer, encode_config=encode_config,
+                                df_path=df_path,
+                                batch_size=batch_size, random_state=random_state, device=device)
 
 
 def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
-         test_ds_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
+         df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
     y_review_texts, y_pred, y_pred_probs, y_test = predict(
         pretrained_bert_name=pretrained_bert,
         batch_size=batch_size,
@@ -210,7 +208,7 @@ def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_s
         epochs=epochs,
         random_state=random_state,
         device=device,
-        test_ds_path=test_ds_path
+        df_path=df_path
     )
     print('F1       :', f1_score(y_test, y_pred))
     print('Precision:', precision_score(y_test, y_pred))
@@ -237,12 +235,29 @@ def perf_measure(y_true, y_pred):
     return TP, FP, TN, FN
 
 
-def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
-           batch_size=16, learning_rate=2e-5, epochs=4, random_state=42, device=device):
+def train_util(pretrained_bert_name, train_data_loader, valid_data_loader, mode="training", kth_fold=None,
+               batch_size=16, learning_rate=2e-5, epochs=4, random_state=42, device=device):
     random.seed(random_state)
     np.random.seed(random_state)
     torch.manual_seed(random_state)
     torch.cuda.manual_seed_all(random_state)
+
+    assert mode in ["training", "tuning"]
+    save_path_prefix = mode  # tuning
+    save_path_prefix = os.path.join(pretrained_bert_name, save_path_prefix)  # vinai/bertweet-base/tuning/
+    save_path_prefix = os.path.join(__models_path__, save_path_prefix)  # models/vinai/bertweet-base/tuning
+    # models/vinai/bertweet-base/tuning/16_2e-5_4_42
+    save_path_prefix = os.path.join(save_path_prefix, f"{batch_size}_{learning_rate}_{epochs}_{random_state}/")
+    if kth_fold is None:
+        # models/vinai/bertweet-base/tuning/16_2e-5_4_42/non_kfold
+        save_path_prefix = os.path.join(save_path_prefix, "non_kfold")
+    else:
+        # models/vinai/bertweet-base/tuning/16_2e-5_4_42/0th_fold
+        save_path_prefix = os.path.join(save_path_prefix, f"{kth_fold}th_fold")
+    save_path_prefix = os.path.abspath(save_path_prefix)
+
+    if not os.path.exists(save_path_prefix):
+        os.makedirs(save_path_prefix)
 
     model = load_sequence_classification_model(pretrained_bert_name)
     model = model.to(device)
@@ -253,17 +268,17 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
 
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
-        num_warmup_steps=2 * len(train_data_loader),
+        num_warmup_steps=total_steps / 10,
         num_training_steps=total_steps
     )
 
-    best_f1_score = -1
     history = defaultdict(list)
+    if mode == 'tuning':
+        history['model_paths'].append("")
 
     for epoch in range(epochs):
-
         print(f'Epoch {epoch + 1}/{epochs}')
-        print('-' * 10)
+        print('-' * 20)
 
         train_f1, train_precision, train_recall, train_accuracy, train_loss = train_epoch(
             model=model,
@@ -274,9 +289,9 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
         )
         train_report = {
             'loss': train_loss,
-            'f1': train_f1,
             'precision': train_precision,
             'recall': train_recall,
+            'f1': train_f1,
             'accuracy': train_accuracy
         }
         print('Train:', train_report)
@@ -289,47 +304,40 @@ def _train(pretrained_bert_name, train_data_loader, valid_data_loader,
 
         val_report = {
             'loss': val_loss,
-            'f1': val_f1,
             'precision': val_precision,
             'recall': val_recall,
+            'f1': val_f1,
             'accuracy': val_accuracy
         }
         print('Valid:', val_report)
+
+        history['train_reports'].append(train_report)
+        history['val_reports'].append(val_report)
+
+        if epoch >= 1 and mode == 'tuning':
+            path_to_save = os.path.join(save_path_prefix, f"model_epoch_{epoch}.bin")
+            torch.save(model.state_dict(), path_to_save)
+            history["model_paths"].append(path_to_save)
+            print(f'State of model after epoch {epoch} saved at', path_to_save)
         print()
-
-        history['train_f1'].append(train_f1)
-        history['train_precision'].append(train_precision)
-        history['train_recall'].append(train_recall)
-        history['train_accuracy'].append(train_accuracy)
-        history['train_loss'].append(train_loss)
-
-        history['val_f1'].append(val_f1)
-        history['val_precision'].append(val_precision)
-        history['val_recall'].append(val_recall)
-        history['val_accuracy'].append(val_accuracy)
-        history['val_loss'].append(train_loss)
-
-        if val_f1 > best_f1_score and epoch >= 1:
-            if not os.path.exists(os.path.join(__models_path__, f'{pretrained_bert_name}')):
-                os.makedirs(os.path.join(__models_path__, f'{pretrained_bert_name}/'))
-            torch.save(
-                model.state_dict(),
-                os.path.join(__models_path__,
-                             f'{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'))
-            best_f1_score = val_f1
 
     model_cpu = model.to(torch.device('cpu'))
     del model
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    return model_cpu, history
+    if mode == "training":
+        path_to_save = os.path.abspath(os.path.join(save_path_prefix, "model.bin"))
+        torch.save(model_cpu.state_dict(), path_to_save)
+        print(f'State of trained model saved at', path_to_save)
+        return model_cpu, history
+    return history
 
 
 def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device,
           train_ds_path=os.path.join(__dataset_path__, 'normalized/train_normalized.tsv'),
           valid_ds_path=os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
-          kfold_num=0, kth_fold=None):
+          kfold_num=0, kth_specified=None):
     tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
     train_df = pd.read_csv(train_ds_path,
                            sep='\t',
@@ -346,16 +354,15 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         'max_seq': encode_config['max_length']
     }
     print('Params =', params)
-    models = []
     histories = []
     if kfold_num != 0:
         kf = StratifiedKFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
         data = pd.concat([train_df, valid_df]).reset_index(drop=True)
-        for k_th, split_indices in enumerate(kf.split(data, y=data[1].values)):
+        for kth_fold, split_indices in enumerate(kf.split(data, y=data[1].values)):
             train_indices, val_indices = split_indices
             train_df = data.iloc[train_indices]
             valid_df = data.iloc[val_indices]
-            print(f"{k_th}th "
+            print(f"{kth_fold}th "
                   "KFOLD----------------------------------------------------------------------------------------------")
             print("Train dataset's info:")
             print(train_df.info())
@@ -375,33 +382,35 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                         encode_config=encode_config)
             train_data_loader = create_data_loader(train_dataset, batch_size)
             valid_data_loader = create_data_loader(valid_dataset, batch_size)
-            model, history = _train(pretrained_bert_name=pretrained_bert_name,
-                                    train_data_loader=train_data_loader,
-                                    valid_data_loader=valid_data_loader,
-                                    batch_size=batch_size,
-                                    learning_rate=learning_rate,
-                                    epochs=epochs,
-                                    random_state=random_state,
-                                    device=device)
+            model, history = train_util(pretrained_bert_name=pretrained_bert_name,
+                                        train_data_loader=train_data_loader,
+                                        valid_data_loader=valid_data_loader,
+                                        batch_size=batch_size,
+                                        learning_rate=learning_rate,
+                                        epochs=epochs,
+                                        random_state=random_state,
+                                        device=device,
+                                        mode="tuning",
+                                        kth_fold=kth_fold)
             history['params'] = params
-            history['params']['k_th'] = k_th
-            models.append(model)
+            history['params']['kth_fold'] = kth_fold
             histories.append(history)
             print()
             print()
-        now = datetime.now()
-        dt_string = now.strftime("%H:%S_%d-%m")
-        with open(os.path.join(__models_path__, f'{pretrained_bert_name}/history_{dt_string}.json'),
+        with open(os.path.join(__models_path__,
+                               f'{pretrained_bert_name}/tuning/history.json'),
                   'w') as fout:
             json.dump(histories, fout)
+        return histories
+
     else:
-        if kth_fold is not None:
+        if kth_specified is not None:
             kf = StratifiedKFold(n_splits=kfold_num, random_state=random_state, shuffle=True)
             data = pd.concat([train_df, valid_df]).reset_index(drop=True)
-            train_indices, val_indices = list(kf.split(data, y=data[1].values))
+            train_indices, val_indices = list(kf.split(data, y=data[1].values))[kth_specified]
             train_df = data.iloc[train_indices]
             valid_df = data.iloc[val_indices]
-            print(f"Split dataset by kfold, using {kth_fold} fold, random state = {random_state}")
+            print(f"Split dataset by kfold, using {kth_specified} fold, random state = {random_state}")
         print("Train dataset's info:")
         print(train_df.info())
         print(train_df[1].value_counts())
@@ -420,15 +429,13 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
                                     encode_config=encode_config)
         train_data_loader = create_data_loader(train_dataset, batch_size)
         valid_data_loader = create_data_loader(valid_dataset, batch_size)
-        model, history = _train(pretrained_bert_name=pretrained_bert_name,
-                                train_data_loader=train_data_loader,
-                                valid_data_loader=valid_data_loader,
-                                batch_size=batch_size,
-                                learning_rate=learning_rate,
-                                epochs=epochs,
-                                random_state=random_state,
-                                device=device)
-        # return [model], [history]
-        models.append(model)
-        histories.append(history)
-    return models, histories
+        model, history = train_util(pretrained_bert_name=pretrained_bert_name,
+                                    train_data_loader=train_data_loader,
+                                    valid_data_loader=valid_data_loader,
+                                    batch_size=batch_size,
+                                    learning_rate=learning_rate,
+                                    epochs=epochs,
+                                    random_state=random_state,
+                                    device=device,
+                                    kth_fold=kth_specified)
+        return model, history

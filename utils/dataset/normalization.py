@@ -8,8 +8,6 @@ import unidecode
 import preprocessor as p
 from ekphrasis.classes.segmenter import Segmenter
 from pycontractions import Contractions
-from spacy.lang.en import English
-
 
 cont = Contractions(api_key="glove-twitter-100")
 cont.load_models()
