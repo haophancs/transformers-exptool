@@ -117,10 +117,10 @@ def eval_epoch(model, data_loader, device):
 
             losses.append(loss.item())
 
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    f1 = (2 * precision * recall) / (precision + recall)
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    precision = tp / (tp + fp) if (tp + fp) else 0
+    recall = tp / (tp + fn) if (tp + fn) else 0
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) else 0
+    accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) else 0
     return f1, precision, recall, accuracy, np.mean(losses)
 
 
