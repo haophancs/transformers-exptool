@@ -96,7 +96,7 @@ def eval_epoch(model, data_loader, device):
             precision_scores.append(precision_score(targets.detach().cpu().numpy(),
                                                     preds.detach().cpu().numpy()))
             recall_scores.append(recall_score(targets.detach().cpu().numpy(),
-                                      preds.detach().cpu().numpy()))
+                                              preds.detach().cpu().numpy()))
             losses.append(loss.item())
     return np.mean(f1_scores), np.mean(precision_scores), np.mean(recall_scores), np.mean(losses)
 
@@ -148,9 +148,10 @@ def predict(pretrained_bert_name, model_path, batch_size=16, random_state=42,
             prediction_probs.extend(probs)
             real_labels.extend(targets)
 
-    predictions = torch.stack(predictions).cpu()
-    prediction_probs = torch.stack(prediction_probs).cpu()
-    real_labels = torch.stack(real_labels).cpu()
+    texts = texts.numpy()
+    predictions = torch.stack(predictions).cpu().numpy()
+    prediction_probs = torch.stack(prediction_probs).cpu().numpy()
+    real_labels = torch.stack(real_labels).cpu().numpy()
     return texts, predictions, prediction_probs, real_labels
 
 
@@ -232,7 +233,8 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             scheduler=scheduler
         )
 
-        print(f'Train loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
+        print(
+            f'Train loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
 
         val_f1, val_precision, val_recall, val_loss = eval_epoch(
             model=model,
@@ -240,7 +242,8 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             device=device
         )
 
-        print(f'Val loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
+        print(
+            f'Val loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
         print()
 
         history['train_f1'].append(train_f1)
@@ -257,7 +260,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         torch.save(
             model.state_dict(),
             os.path.join(__models_path__,
-                         f'{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'))
+                         f'{pretrained_bert_name}/{batch_size}_{learning_rate}_{epoch+1}_{random_state}.bin'))
 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
