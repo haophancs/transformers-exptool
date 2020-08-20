@@ -37,8 +37,11 @@ if __name__ == '__main__':
                    epochs=args.epochs,
                    learning_rate=args.learning_rate,
                    random_state=args.random_state)
-    bert_clf.eval(pretrained_bert_name=args.pretrained_bert,
-                  batch_size=args.batch_size,
-                  epochs=args.epochs,
-                  learning_rate=args.learning_rate,
-                  random_state=args.random_state)
+    for epoch in range(1, args.epochs + 1):
+        print("Evaluate model with state after epoch", epoch)
+        bert_clf.eval(pretrained_bert_name=args.pretrained_bert,
+                      batch_size=args.batch_size,
+                      epochs=epoch,
+                      learning_rate=args.learning_rate,
+                      random_state=args.random_state)
+        print()

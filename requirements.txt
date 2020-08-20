@@ -12,3 +12,4 @@ fastBPE>=0.1.0
 ekphrasis>=0.5.1
 tweet-preprocessor>=0.6.0
 pycontractions>=2.0.1
+unidecode
