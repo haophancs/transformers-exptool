@@ -3,10 +3,8 @@ import os
 import torch
 import pickle
 import numpy as np
-import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 from utils.dataset.embedding import last_layer_features, text_vector
-from utils.pretrained import load_pretrained_tokenization
 from utils import __dataset_path__
 
 dataset_prefix = os.path.join(__dataset_path__, 'embedded')
@@ -15,27 +13,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class BertDataset(Dataset):
 
-    @staticmethod
-    def from_df(df_path, pretrained_bert_name):
-        test_df = pd.read_csv(df_path,
-                              sep='\t',
-                              header=None)  # check
-        tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
-
-        with_labels = 1 in test_df.columns
-        if with_labels:
-            dataset = BertDataset(texts=test_df[0].values,
-                                  labels=test_df[1].values,
-                                  tokenizer=tokenizer,
-                                  encode_config=encode_config)
-        else:
-            dataset = BertDataset(texts=test_df[0].values,
-                                  tokenizer=tokenizer,
-                                  encode_config=encode_config,
-                                  labels=None)
-        return dataset
-
-    def __init__(self, texts, tokenizer, encode_config, labels=None):
+    def __init__(self, texts, labels, tokenizer, encode_config):
         self.texts = texts
         self.labels = labels
         self.tokenizer = tokenizer
@@ -47,20 +25,17 @@ class BertDataset(Dataset):
 
     def __getitem__(self, item):
         text = str(self.texts[item])
-        if self.labels is not None:
-            label = self.labels[item]
-        else:
-            label = None
+        label = self.labels[item]
         encoded = self.tokenizer.encode_plus(
             text,
             **self.encode_config
         )
-        dataset = dict()
-        dataset['text'] = text
-        dataset['input_ids'] = encoded['input_ids'].flatten()
-        dataset['attention_mask'] = encoded['attention_mask'].flatten()
-        if label is not None:
-            dataset['label'] = torch.tensor(label, dtype=torch.long)
+        dataset = {
+            'text': text,
+            'input_ids': encoded['input_ids'].flatten(),
+            'attention_mask': encoded['attention_mask'].flatten(),
+            'label': torch.tensor(label, dtype=torch.long)
+        }
         return dataset
 
 
@@ -134,13 +109,12 @@ class BertEmbeddedDataset(Dataset):
                                        pretrained_bert_name=pretrained_bert_name)
 
 
-def create_data_loader(dataset, batch_size, shuffle=True, num_workers=None):
+def create_data_loader(dataset, batch_size, num_workers=None):
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
 
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
         num_workers=num_workers
     )

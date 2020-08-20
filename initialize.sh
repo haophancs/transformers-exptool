@@ -16,4 +16,3 @@ rm BERTweet_base_transformers.tar.gz
 mv models/pretrained/vinai/BERTweet_base_transformers/ models/pretrained/vinai/bertweet-base
 rm models/pretrained/vinai/bertweet-base/model.bin
 rm models/pretrained/vinai/bertweet-base/config.json
-

@@ -77,8 +77,8 @@ class BERTweetTokenizer:
         input_ids = self.encode(text, append_eos=append_eos)
         if max_length is not None:
             if truncation:
-                # if len(input_ids) > max_length:
-                #    print(f'Truncated: max sequence length is {max_length}, got {len(input_ids)}')
+                if len(input_ids) > max_length:
+                    print(f'Truncated: max sequence length is {max_length}, got {len(input_ids)}')
                 input_ids = input_ids[:max_length]
             else:
                 print("Truncation was not explicitely activated but `max_length` is provided a specific value, "
@@ -126,3 +126,4 @@ def load_pretrained_model(pretrained_name):
     bert_config = AutoConfig.from_pretrained(pretrained_name, **additional_model_config)
     bert_model = AutoModel.from_pretrained(pretrained_name, config=bert_config)
     return bert_model
+

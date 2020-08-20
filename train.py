@@ -37,6 +37,8 @@ if __name__ == '__main__':
                    epochs=args.epochs,
                    learning_rate=args.learning_rate,
                    random_state=args.random_state)
-    bert_clf.eval(pretrained_bert=args.pretrained_bert,
+    bert_clf.eval(pretrained_bert_name=args.pretrained_bert,
                   batch_size=args.batch_size,
+                  epochs=args.epochs,
+                  learning_rate=args.learning_rate,
                   random_state=args.random_state)

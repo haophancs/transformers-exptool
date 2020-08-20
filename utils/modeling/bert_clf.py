@@ -42,7 +42,8 @@ def train_epoch(
 
     losses = []
     f1_scores = []
-
+    precision_scores = []
+    recall_scores = []
     for d in data_loader:
         input_ids = d["input_ids"].to(device)
         attention_mask = d["attention_mask"].to(device)
@@ -57,7 +58,10 @@ def train_epoch(
         _, preds = torch.max(logits, dim=1)
         f1_scores.append(f1_score(targets.detach().cpu().numpy(),
                                   preds.detach().cpu().numpy()))
-
+        precision_scores.append(precision_score(targets.detach().cpu().numpy(),
+                                                preds.detach().cpu().numpy()))
+        recall_scores.append(recall_score(targets.detach().cpu().numpy(),
+                                          preds.detach().cpu().numpy()))
         losses.append(loss.item())
 
         loss.backward()
@@ -65,8 +69,7 @@ def train_epoch(
         optimizer.step()
         scheduler.step()
         optimizer.zero_grad()
-
-    return np.mean(f1_scores), np.mean(losses)
+    return np.mean(f1_scores), np.mean(precision_scores), np.mean(recall_scores), np.mean(losses)
 
 
 def eval_epoch(model, data_loader, device):
@@ -74,6 +77,8 @@ def eval_epoch(model, data_loader, device):
 
     losses = []
     f1_scores = []
+    precision_scores = []
+    recall_scores = []
     with torch.no_grad():
         for d in data_loader:
             input_ids = d["input_ids"].to(device)
@@ -88,13 +93,16 @@ def eval_epoch(model, data_loader, device):
             _, preds = torch.max(logits, dim=1)
             f1_scores.append(f1_score(targets.detach().cpu().numpy(),
                                       preds.detach().cpu().numpy()))
-
+            precision_scores.append(precision_score(targets.detach().cpu().numpy(),
+                                                    preds.detach().cpu().numpy()))
+            recall_scores.append(recall_score(targets.detach().cpu().numpy(),
+                                      preds.detach().cpu().numpy()))
             losses.append(loss.item())
-    return np.mean(f1_scores), np.mean(losses)
+    return np.mean(f1_scores), np.mean(precision_scores), np.mean(recall_scores), np.mean(losses)
 
 
-def predict(pretrained_bert_name, model_path="", batch_size=16, learning_rate=2e-5, epochs=10, random_state=42,
-            df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv'),
+def predict(pretrained_bert_name, model_path, batch_size=16, random_state=42,
+            df_path=os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
             device=device):
     random.seed(random_state)
     np.random.seed(random_state)
@@ -104,12 +112,12 @@ def predict(pretrained_bert_name, model_path="", batch_size=16, learning_rate=2e
                           sep='\t',
                           header=None)  # check
     tokenizer, encode_config = load_pretrained_tokenization(pretrained_bert_name)
-    test_dataset = BertDataset(test_df[0].values, test_df[1].values, tokenizer, encode_config)
+    test_dataset = BertDataset(texts=test_df[0].values,
+                               labels=test_df[1].values,
+                               tokenizer=tokenizer,
+                               encode_config=encode_config)
     test_data_loader = create_data_loader(test_dataset, batch_size)
 
-    if model_path == "":
-        model_path = os.path.join(__models_path__,
-                                  f'./{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin'),
     model = load_sequence_classification_model(pretrained_bert_name)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model = model.to(device)
@@ -146,14 +154,15 @@ def predict(pretrained_bert_name, model_path="", batch_size=16, learning_rate=2e
     return texts, predictions, prediction_probs, real_labels
 
 
-def eval(pretrained_bert, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42,
-         df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv'),
+def eval(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42,
+         df_path=os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv'),
          device=device):
+    model_path = os.path.join(__models_path__,
+                              f"{pretrained_bert_name}/{batch_size}_{learning_rate}_{epochs}_{random_state}.bin")
     y_review_texts, y_pred, y_pred_probs, y_test = predict(
-        pretrained_bert_name=pretrained_bert,
+        pretrained_bert_name=pretrained_bert_name,
+        model_path=model_path,
         batch_size=batch_size,
-        learning_rate=learning_rate,
-        epochs=epochs,
         random_state=random_state,
         df_path=df_path,
         device=device
@@ -215,7 +224,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
 
-        train_f1, train_loss = train_epoch(
+        train_f1, train_precision, train_recall, train_loss = train_epoch(
             model=model,
             data_loader=train_data_loader,
             optimizer=optimizer,
@@ -223,20 +232,24 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             scheduler=scheduler
         )
 
-        print(f'Train loss {train_loss} f1_score {train_f1}')
+        print(f'Train loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
 
-        val_f1, val_loss = eval_epoch(
+        val_f1, val_precision, val_recall, val_loss = eval_epoch(
             model=model,
             data_loader=val_data_loader,
             device=device
         )
 
-        print(f'Val loss {val_loss} f1_score {val_f1}')
+        print(f'Val loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
         print()
 
         history['train_f1'].append(train_f1)
+        history['train_precision'].append(train_precision)
+        history['train_recall'].append(train_recall)
         history['train_loss'].append(train_loss)
         history['val_f1'].append(val_f1)
+        history['val_precision'].append(val_precision)
+        history['val_recall'].append(val_recall)
         history['val_loss'].append(val_loss)
 
         if not os.path.exists(os.path.join(__models_path__, f'{pretrained_bert_name}')):
