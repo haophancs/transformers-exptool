@@ -247,7 +247,7 @@ def normalize_text(norm_tweet,
     if to_lower:
         norm_tweet = norm_tweet.lower()
 
-    while '"' in norm_tweet:
+    while '""' in norm_tweet:
         norm_tweet = norm_tweet.replace('""', '"')
     norm_tweet = re.sub(r'\"+', '"', norm_tweet)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
