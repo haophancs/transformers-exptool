@@ -79,10 +79,10 @@ def train_epoch(
         scheduler.step()
         optimizer.zero_grad()
 
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    f1 = (2 * precision * recall) / (precision + recall)
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    precision = tp / (tp + fp) if (tp + fp) else 0
+    recall = tp / (tp + fn) if (tp + fn) else 0
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) else 0
+    accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) else 0
     return f1, precision, recall, accuracy, np.mean(losses)
 
 
@@ -353,11 +353,11 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             print(f"{kth_fold}th "
                   "KFOLD----------------------------------------------------------------------------------------------")
             print("Train dataset's info:")
-            print(train_df.info())
+            # print(train_df.info())
             print(train_df[1].value_counts())
             print()
             print("Valid dataset's info:")
-            print(valid_df.info())
+            # print(valid_df.info())
             print(valid_df[1].value_counts())
             print('-' * 10)
             train_dataset = BertDataset(texts=train_df[0].values,
@@ -390,7 +390,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         with open(os.path.join(
                 __models_path__,
                 f'{pretrained_bert_name}/history_{dt_string}.json'),
-                  'w') as fout:
+                'w') as fout:
             json.dump(histories, fout)
         return histories
 
@@ -403,11 +403,11 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
             valid_df = data.iloc[val_indices]
             print(f"Split dataset by kfold, using {kth_specified} fold, random state = {random_state}")
         print("Train dataset's info:")
-        print(train_df.info())
+        # print(train_df.info())
         print(train_df[1].value_counts())
         print()
         print("Valid dataset's info:")
-        print(valid_df.info())
+        # print(valid_df.info())
         print(valid_df[1].value_counts())
         print('-' * 10)
         train_dataset = BertDataset(texts=train_df[0].values,
