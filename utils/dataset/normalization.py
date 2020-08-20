@@ -120,6 +120,7 @@ def normalize_abbreviations(norm_tweet):
     norm_tweet = re.sub(r"traumatised", "traumatized", norm_tweet)
     norm_tweet = re.sub(r"ppl", "people", norm_tweet)
     norm_tweet = re.sub(r"Ppl", "People", norm_tweet)
+    norm_tweet = re.sub(r"sh\*t", r"shit", norm_tweet)
     norm_tweet = norm_tweet.replace("cv19", "COVID 19")
     norm_tweet = norm_tweet.replace("cvid19", "COVID 19")
     return norm_tweet
