@@ -1,8 +1,8 @@
 {
   "to_lower": true,
   "to_ascii": true,
-  "keep_emojis": true,
-  "segment_hashtag": false,
+  "keep_emojis": false,
+  "segment_hashtag": true,
   "username": "twitteruser",
   "httpurl": "twitterurl"
 }

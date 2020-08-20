@@ -3,7 +3,6 @@
 *.bin
 *.pyc
 !data/raw/*.tsv
-!data/normalized/*.tsv
 *.pt
 models/*
 .idea
