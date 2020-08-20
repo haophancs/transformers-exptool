@@ -128,7 +128,7 @@ def normalize_abbreviations(norm_tweet):
 
 def normalize_hashtag(norm_tweet):
     for hashtag in re.findall(r"#(\w+)", norm_tweet):
-        norm_tweet = norm_tweet.replace(f'#{hashtag}', '# ' + seg_tw.segment(hashtag))
+        norm_tweet = norm_tweet.replace(f'#{hashtag}', '#' + seg_tw.segment(hashtag))
     return norm_tweet
 
 

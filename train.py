@@ -5,7 +5,7 @@ from utils.modeling import bert_clf
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--pretrained-bert',
-                        default="bert-base-cased",
+                        default="digitalepidemiologylab/covid-twitter-bert",
                         choices=PretrainedOptionsAvailable,
                         required=False,
                         type=str,
@@ -37,3 +37,6 @@ if __name__ == '__main__':
                    epochs=args.epochs,
                    learning_rate=args.learning_rate,
                    random_state=args.random_state)
+    bert_clf.eval(pretrained_bert=args.pretrained_bert,
+                  batch_size=args.batch_size,
+                  random_state=args.random_state)

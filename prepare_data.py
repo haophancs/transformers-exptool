@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--pretrained-bert',
-                        default="bert-base-cased",
+                        default="digitalepidemiologylab/covid-twitter-bert",
                         required=False,
                         choices=PretrainedOptionsAvailable,
                         type=str,
