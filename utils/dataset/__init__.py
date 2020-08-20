@@ -89,9 +89,9 @@ class BertEmbeddedDataset(Dataset):
     def dump_to_file(self, name):
         embedded = self.embedded_features.detach().cpu().numpy()
         dict_to_save = {
-            "texts": self.texts,
+            "text": self.texts,
             "embedded_features": embedded,
-            "labels": self.labels
+            "label": self.labels
         }
         path = os.path.join(__dataset_path__, f'embedded/{name}_{self.embedding_type}_{self.model_name}')
         with open(path + '.pkl', 'wb') as f:
@@ -103,9 +103,9 @@ class BertEmbeddedDataset(Dataset):
         with open(path + '.pkl', 'rb') as fp:
             data = pickle.load(fp)
             return BertEmbeddedDataset(embedding_type=embedding_type,
-                                       texts=data["texts"],
+                                       texts=data["text"],
                                        embedded_features=torch.tensor(data["embedded_features"]),
-                                       labels=data["labels"],
+                                       labels=data["label"],
                                        pretrained_bert_name=pretrained_bert_name)
 
 

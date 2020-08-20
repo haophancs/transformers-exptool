@@ -243,7 +243,7 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
         )
 
         print(
-            f'Val loss {train_loss} f1_score {train_f1}, precision_score {train_precision}, recall_score {train_recall}')
+            f'Val loss {val_loss} f1_score {val_f1}, precision_score {val_precision}, recall_score {val_recall}')
         print()
 
         history['train_f1'].append(train_f1)
