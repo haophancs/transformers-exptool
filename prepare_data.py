@@ -4,6 +4,7 @@ logging.basicConfig(level=logging.ERROR)
 from utils.dataset.normalization import normalize_series
 from utils.pretrained import PretrainedOptionsAvailable
 import pandas as pd
+import numpy as np
 import argparse
 import os
 import json
@@ -57,8 +58,7 @@ def run(pretrained_bert_name,
     print('Mapping label...', end=' ')
     train_df[2] = train_df[2].apply(lambda label: label_map[label])
     valid_df[2] = valid_df[2].apply(lambda label: label_map[label])
-    if 2 in test_df.columns:
-        test_df[2] = test_df[2].apply(lambda label: label_map[label])
+    test_df[2] = test_df[2].apply(lambda label: label_map[label] if label in label_map else np.nan)
     print('done')
 
     train_df.to_csv(os.path.join('./data/normalized/', 'train_normalized.tsv'), sep='\t', index=False, header=False)

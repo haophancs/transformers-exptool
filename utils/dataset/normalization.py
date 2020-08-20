@@ -95,6 +95,9 @@ def normalize_contractions(norm_tweet):
 
 
 def normalize_abbreviations(norm_tweet):
+    norm_tweet = re.sub(r'R\.I\.P', 'Rest In Peace', norm_tweet)
+    norm_tweet = re.sub(r'R\.i\.p', 'Rest in peace', norm_tweet)
+    norm_tweet = re.sub(r'r\.i\.p', 'rest in peace', norm_tweet)
     norm_tweet = re.sub(r"U\.S", "United States", norm_tweet)
     norm_tweet = re.sub(r"u\.s", "united states", norm_tweet)
     norm_tweet = re.sub(r"w/e", "whatever", norm_tweet)
@@ -115,8 +118,8 @@ def normalize_abbreviations(norm_tweet):
     norm_tweet = re.sub(r"lol", "laughing out loud", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r"TRAUMATISED", "traumatized", norm_tweet)
     norm_tweet = re.sub(r"traumatised", "traumatized", norm_tweet)
-    norm_tweet = norm_tweet.replace("cv19", "COVID19")
-    norm_tweet = norm_tweet.replace("cvid19", "COVID19")
+    norm_tweet = norm_tweet.replace("cv19", "COVID 19")
+    norm_tweet = norm_tweet.replace("cvid19", "COVID 19")
     return norm_tweet
 
 
@@ -208,10 +211,11 @@ def normalize_text(norm_tweet,
     norm_tweet = replace_multi_occurrences(norm_tweet, username)
     norm_tweet = replace_multi_occurrences(norm_tweet, httpurl)
 
-    norm_tweet = re.sub(r"(covid.19)", "COVID19 ", norm_tweet, flags=re.I)
-    norm_tweet = re.sub(r"(covid...19)", "COVID19 ", norm_tweet, flags=re.I)
-    norm_tweet = re.sub(r"covid19", " COVID19 ", norm_tweet, flags=re.I)
-    norm_tweet = re.sub(r"# COVID19", "#COVID19", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"(covid.19)", "COVID 19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"(covid...19)", "COVID 19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"covid19", " COVID 19 ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"# COVID19", "#COVID 19", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"# COVID19", "#COVID 19", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
 
     if segment_hashtag:
@@ -228,19 +232,20 @@ def normalize_text(norm_tweet,
     norm_tweet = re.sub(r" p \. m ", " p.m ", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r" a \. m \.", "  a.m.", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r" a \. m ", " a.m ", norm_tweet, flags=re.I)
+    norm_tweet = re.sub(r"'s", " 's ", norm_tweet)
+    norm_tweet = re.sub(r"(covid.19)", "COVID19", norm_tweet, flags=re.I)
 
     norm_tweet = re.sub(r",([0-9]{2,4}) , ([0-9]{2,4})", r",\1,\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3}) / ([0-9]{2,4})", r"\1/\2", norm_tweet)
     norm_tweet = re.sub(r"([0-9]{1,3})- ([0-9]{2,4})", r"\1-\2", norm_tweet)
-
-    norm_tweet = re.sub(r"(covid.19)", "COVID19", norm_tweet, flags=re.I)
-    norm_tweet = re.sub(r"\"\"", "", norm_tweet, flags=re.I)
 
     if to_ascii:
         norm_tweet = ''.join(ch for ch in norm_tweet if unicodedata.category(ch)[0] != 'So')
         norm_tweet = unicodedata.normalize('NFKD', norm_tweet).encode('ascii', 'ignore').decode('utf-8')
     if to_lower:
         norm_tweet = norm_tweet.lower()
+
+    norm_tweet = re.sub(r"\"\"", "\"", norm_tweet)
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
     return norm_tweet
 
