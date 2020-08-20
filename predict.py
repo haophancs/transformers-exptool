@@ -51,11 +51,10 @@ if __name__ == '__main__':
                                                                           batch_size=args.batch_size,
                                                                           random_state=args.random_state,
                                                                           df_path=args.df_path,
-                                                                          device=torch.device(device))
-    pred_file = open("predictions.txt", "w")
-    for row in predictions:
-        if args.map_label:
-            row = label_map[row]
-        np.savetxt(pred_file, row)
-    pred_prob_file = "predictions_proba.bin"
+                                                                    device=torch.device(device))
+    pred_file = "predictions.txt"
+    if args.map_label:
+        predictions = np.vectorize(lambda label: label_map[label])(predictions)
+    np.savetxt(pred_file, predictions, delimiter="\n", fmt="%s")
+    pred_prob_file = "predictions_proba"
     np.save(pred_prob_file, predictions_proba)

@@ -148,7 +148,6 @@ def predict(pretrained_bert_name, model_path, batch_size=16, random_state=42,
             prediction_probs.extend(probs)
             real_labels.extend(targets)
 
-    texts = texts.numpy()
     predictions = torch.stack(predictions).cpu().numpy()
     prediction_probs = torch.stack(prediction_probs).cpu().numpy()
     real_labels = torch.stack(real_labels).cpu().numpy()
