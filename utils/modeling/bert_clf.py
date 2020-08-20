@@ -192,7 +192,7 @@ def predict(pretrained_bert_name, model_path,
 
 
 def eval(pretrained_bert, model_path, batch_size=16, random_state=42, device=device,
-         df_path=os.path.join(__dataset_path__, 'normalized/test_normalized.tsv')):
+         df_path=os.path.join(__dataset_path__, 'normalized/valid_normalized.tsv')):
     y_review_texts, y_pred, y_pred_probs, y_test = predict(
         pretrained_bert_name=pretrained_bert,
         batch_size=batch_size,
@@ -302,11 +302,10 @@ def train_util(pretrained_bert_name, train_data_loader, valid_data_loader, mode=
         history['train_reports'].append(train_report)
         history['val_reports'].append(val_report)
 
-        if mode == 'tuning':
-            path_to_save = os.path.join(save_path_prefix, f"model_epoch_{epoch + 1}.bin")
-            torch.save(model.state_dict(), path_to_save)
-            history["model_paths"].append(path_to_save)
-            print(f'State of model after epoch {epoch + 1} saved at', path_to_save)
+        path_to_save = os.path.join(save_path_prefix, f"model_epoch_{epoch + 1}.bin")
+        torch.save(model.state_dict(), path_to_save)
+        history["model_paths"].append(path_to_save)
+        print(f'State of model after epoch {epoch + 1} saved at', path_to_save)
         print()
 
     model_cpu = model.to(torch.device('cpu'))
@@ -315,9 +314,6 @@ def train_util(pretrained_bert_name, train_data_loader, valid_data_loader, mode=
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     if mode == "training":
-        path_to_save = os.path.abspath(os.path.join(save_path_prefix, "model.bin"))
-        torch.save(model_cpu.state_dict(), path_to_save)
-        print(f'State of trained model saved at', path_to_save)
         return model_cpu, history
     return history
 

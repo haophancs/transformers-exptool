@@ -118,6 +118,8 @@ def normalize_abbreviations(norm_tweet):
     norm_tweet = re.sub(r"lol", "laughing out loud", norm_tweet, flags=re.I)
     norm_tweet = re.sub(r"TRAUMATISED", "traumatized", norm_tweet)
     norm_tweet = re.sub(r"traumatised", "traumatized", norm_tweet)
+    norm_tweet = re.sub(r"ppl", "people", norm_tweet)
+    norm_tweet = re.sub(r"Ppl", "People", norm_tweet)
     norm_tweet = norm_tweet.replace("cv19", "COVID 19")
     norm_tweet = norm_tweet.replace("cvid19", "COVID 19")
     return norm_tweet
@@ -245,7 +247,8 @@ def normalize_text(norm_tweet,
     if to_lower:
         norm_tweet = norm_tweet.lower()
 
-    norm_tweet = re.sub(r"\"\"", "\"", norm_tweet)
+    while '"' in norm_tweet:
+        norm_tweet = norm_tweet.replace('""', '"')
     norm_tweet = re.sub(r'\s+', ' ', norm_tweet).strip()
     return norm_tweet
 
