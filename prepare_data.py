@@ -98,27 +98,6 @@ if __name__ == "__main__":
                         required=False,
                         type=int,
                         help='no. of rows limit of test set')
-    parser.add_argument('--keep-emojis',
-                        default=None,
-                        required=False,
-                        type=bool,
-                        help='keep emojis')
-    parser.add_argument('--to-lower',
-                        default=None,
-                        required=False,
-                        type=bool,
-                        help='to lowercased')
-    parser.add_argument('--to-ascii',
-                        default=None,
-                        required=False,
-                        type=bool,
-                        help='convert to ascii')
-    parser.add_argument('--segment-hashtag',
-                        default=None,
-                        required=False,
-                        type=bool,
-                        help='segment hashtag')
-
     args = parser.parse_args()
     run(pretrained_bert_name=args.pretrained_bert,
         train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit)
