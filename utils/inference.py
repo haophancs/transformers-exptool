@@ -161,8 +161,10 @@ def hard_voting_predict(all_model_paths, df_path, labels=None):
             random_state=model_info['random_state'],
             df_path=preprocessed_df_path)
         all_model_predictions.append(predictions)
+        os.remove(preprocessed_df_path)
+        gc.collect()
 
-    predictions_final = np.zeros_like(all_model_predictions[0].shape)
+    predictions_final = np.zeros_like(all_model_predictions[0])
     for prediction_idx in range(predictions_final.shape[0]):
         votes = [0, 0]
         for model_idx in range(len(all_model_predictions)):
@@ -171,3 +173,4 @@ def hard_voting_predict(all_model_paths, df_path, labels=None):
     predictions_final = np.vectorize(lambda label: labels[label])(predictions_final)
     gc.collect()
     return predictions_final
+
