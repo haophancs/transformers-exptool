@@ -1,4 +1,5 @@
 import os
+import gc
 import random
 from collections import defaultdict
 
@@ -175,6 +176,9 @@ def eval(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ran
 
 
 def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, random_state=42, device=device):
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
     random.seed(random_state)
     np.random.seed(random_state)
     torch.manual_seed(random_state)
@@ -263,4 +267,5 @@ def train(pretrained_bert_name, batch_size=16, learning_rate=2e-5, epochs=10, ra
 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+    gc.collect()
     return model, history
