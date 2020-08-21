@@ -12,13 +12,6 @@ import json
 label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
 
 
-def add_bool_arg(parser, name, default=False):
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--' + name, dest=name, action='store_true')
-    group.add_argument('--no-' + name, dest=name, action='store_false')
-    parser.set_defaults(**{name:default})
-
-
 def run(pretrained_bert_name,
         train_limit=-1, valid_limit=-1, test_limit=-1,
         to_lower=None, to_ascii=None, keep_emojis=None, username=None, httpurl=None, segment_hashtag=None):
@@ -100,4 +93,6 @@ if __name__ == "__main__":
                         help='no. of rows limit of test set')
     args = parser.parse_args()
     run(pretrained_bert_name=args.pretrained_bert,
-        train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit)
+        train_limit=args.train_limit,
+        valid_limit=args.valid_limit,
+        test_limit=args.test_limit)
