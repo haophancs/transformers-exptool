@@ -69,7 +69,10 @@ def preprocess(df_path, pretrained_bert_name,
                              segment_hashtag=segment_hashtag,
                              username=username,
                              httpurl=httpurl)
-    df[2] = df[2].apply(lambda label: label_map[label])
+    if 2 in df.columns:
+        df[2] = df[2].apply(lambda label: label_map[label])
+    else:
+        df[2] = -1
     temp_path = os.path.abspath(f'./temp{str(int(time.time()))}.tsv')
     df.to_csv(temp_path, sep='\t', header=False, index=False)
     return temp_path
@@ -142,7 +145,6 @@ if __name__ == "__main__":
     model_paths = [
         '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_2_380343_9202_9280.bin',
         '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_1_9042_9407.bin']
-    df_path = 'https://raw.githubusercontent.com/VinAIResearch/COVID19Tweet/master/valid.tsv'
-    predictions = ensemble_predict(model_paths, df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
+    predictions = ensemble_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     np.savetxt(args.output_path, predictions, delimiter="\n", fmt="%s")
 
