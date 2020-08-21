@@ -14,12 +14,7 @@ if __name__ == "__main__":
                         default='./predictions.txt',
                         type=str,
                         required=False,
-                        help='device type')
-    parser.add_argument('--output-path',
-                        default='./predictions.txt',
-                        type=str,
-                        required=False,
-                        help='device type')
+                        help='output path')
     parser.add_argument('--voting-type',
                         default='hard',
                         choices=['hard', 'soft'],

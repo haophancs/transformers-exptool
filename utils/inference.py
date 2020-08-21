@@ -167,6 +167,7 @@ def hard_voting_predict(all_model_paths, df_path, labels=None):
         votes = [0, 0]
         for model_idx in range(len(all_model_predictions)):
             votes[all_model_predictions[model_idx][prediction_idx]] += 1
+        predictions_final[prediction_idx] = np.argmax(votes)
     predictions_final = np.vectorize(lambda label: labels[label])(predictions_final)
     gc.collect()
     return predictions_final
