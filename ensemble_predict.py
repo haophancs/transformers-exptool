@@ -78,19 +78,21 @@ def preprocess(df_path, pretrained_bert_name,
     return temp_path
 
 
-def ensemble_predict(model_paths, df_path, labels=[0, 1]):
-    models_predictions = []
-    models_probas = []
-    models_precision_scores = []
-    models_recall_scores = []
-    for model_path in model_paths:
+def ensemble_predict(models_paths, df_path, labels=None):
+    if labels is None:
+        labels = [0, 1]
+    all_model_predictions = []
+    all_model_probas = []
+    all_model_precision_scores = []
+    all_models_recall_scores = []
+    for model_path in models_paths:
         model_info = extract_model_info(model_path)
         print('-' * 20)
         print('Processing', model_info['model_name'])
         del model_info['model_name']
         print('Model info:', model_info)
-        models_precision_scores.append(model_info['precision'])
-        models_recall_scores.append(model_info['recall'])
+        all_model_precision_scores.append(model_info['precision'])
+        all_models_recall_scores.append(model_info['recall'])
         print('-- Preparing data for inference...')
         preprocessed_df_path = preprocess(df_path=df_path,
                                           labels=labels,
@@ -104,26 +106,26 @@ def ensemble_predict(model_paths, df_path, labels=[0, 1]):
             batch_size=model_info['batch_size'],
             random_state=model_info['random_state'],
             df_path=preprocessed_df_path)
-        models_predictions.append(predictions)
-        models_probas.append(predictions_proba)
+        all_model_predictions.append(predictions)
+        all_model_probas.append(predictions_proba)
         os.remove(preprocessed_df_path)
         gc.collect()
 
-    shape = models_probas[0].shape
-    for proba in models_probas:
+    shape = all_model_probas[0].shape
+    for proba in all_model_probas:
         assert proba.shape == shape
 
-    models_precision_scores = np.array(models_precision_scores)
-    models_recall_scores = np.array(models_recall_scores)
+    all_model_precision_scores = np.array(all_model_precision_scores)
+    all_models_recall_scores = np.array(all_models_recall_scores)
     proba_final = np.zeros(shape=shape)
     for prediction_idx in range(proba_final.shape[0]):
-        for model_idx in range(len(models_probas)):
-            proba_final[prediction_idx][0] += models_probas[model_idx][prediction_idx][0] * models_recall_scores[
-                model_idx]
-            proba_final[prediction_idx][1] += models_probas[model_idx][prediction_idx][1] * models_precision_scores[
-                model_idx]
-        proba_final[prediction_idx][0] /= models_recall_scores.sum()
-        proba_final[prediction_idx][1] /= models_precision_scores.sum()
+        for model_idx in range(len(all_model_probas)):
+            proba_final[prediction_idx][0] += all_model_probas[model_idx][prediction_idx][0] \
+                                              * all_models_recall_scores[model_idx]
+            proba_final[prediction_idx][1] += all_model_probas[model_idx][prediction_idx][1] \
+                                              * all_model_precision_scores[model_idx]
+        proba_final[prediction_idx][0] /= all_models_recall_scores.sum()
+        proba_final[prediction_idx][1] /= all_model_precision_scores.sum()
     predictions_final = proba_final.argmax(axis=1)
     predictions_final = np.vectorize(lambda label: labels[label])(predictions_final)
     return predictions_final
@@ -147,4 +149,3 @@ if __name__ == "__main__":
         '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_1_9042_9407.bin']
     predictions = ensemble_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     np.savetxt(args.output_path, predictions, delimiter="\n", fmt="%s")
-
