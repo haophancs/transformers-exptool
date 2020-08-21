@@ -45,16 +45,21 @@ if __name__ == '__main__':
                         type=str,
                         required=False,
                         help='device type')
+    parser.add_argument('--output-path',
+                        default='./',
+                        type=str,
+                        required=False,
+                        help='device type')
     args = parser.parse_args()
     texts, predictions, predictions_proba, real_labels = bert_clf.predict(pretrained_bert_name=args.pretrained_bert,
                                                                           model_path=args.model_path,
                                                                           batch_size=args.batch_size,
                                                                           random_state=args.random_state,
                                                                           df_path=args.df_path,
-                                                                    device=torch.device(device))
-    pred_file = "predictions.txt"
+                                                                          device=torch.device(device))
+    pred_file = os.path.join(args.output_path, "predictions.txt")
     if args.map_label:
         predictions = np.vectorize(lambda label: label_map[label])(predictions)
     np.savetxt(pred_file, predictions, delimiter="\n", fmt="%s")
-    pred_prob_file = "predictions_proba"
+    pred_prob_file = os.path.join(args.output_path, "predictions_proba")
     np.save(pred_prob_file, predictions_proba)
