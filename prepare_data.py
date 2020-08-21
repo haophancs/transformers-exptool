@@ -119,10 +119,6 @@ if __name__ == "__main__":
                         type=bool,
                         help='segment hashtag')
 
-    parser.add_argument('--feature', dest='feature', action='store_true')
-    parser.add_argument('--no-feature', dest='feature', action='store_false')
-    parser.set_defaults(feature=True)
-
     args = parser.parse_args()
     run(pretrained_bert_name=args.pretrained_bert,
         train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit)
