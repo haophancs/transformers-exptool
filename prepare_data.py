@@ -1,6 +1,7 @@
 import logging
 logging.basicConfig(level=logging.ERROR)
 
+from utils.dataset.normalization import normalize_series
 from utils.pretrained import PretrainedOptionsAvailable
 import pandas as pd
 import numpy as np
@@ -9,6 +10,13 @@ import os
 import json
 
 label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
+
+
+def add_bool_arg(parser, name, default=False):
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('--' + name, dest=name, action='store_true')
+    group.add_argument('--no-' + name, dest=name, action='store_false')
+    parser.set_defaults(**{name:default})
 
 
 def run(pretrained_bert_name,
@@ -43,10 +51,6 @@ def run(pretrained_bert_name,
     if segment_hashtag is None:
         segment_hashtag = preprocess_config['segment_hashtag']
     print('Normalizing texts...', end=' ')
-    print(keep_emojis, segment_hashtag)
-    return
-
-    from utils.dataset.normalization import normalize_series
     train_df[1] = normalize_series(train_df[1], to_lower=to_lower, to_ascii=to_ascii,
                                    keep_emojis=keep_emojis, segment_hashtag=segment_hashtag,
                                    username=username, httpurl=httpurl)
@@ -61,7 +65,7 @@ def run(pretrained_bert_name,
     print('Mapping label...', end=' ')
     train_df[2] = train_df[2].apply(lambda label: label_map[label])
     valid_df[2] = valid_df[2].apply(lambda label: label_map[label])
-    test_df[2] = test_df[2].apply(lambda label: label_map[label] if label in label_map else -1)
+    test_df[2] = test_df[2].apply(lambda label: label_map[label] if label in label_map else np.nan)
     print('done')
 
     train_df.to_csv(os.path.join('./data/normalized/', 'train_normalized.tsv'), sep='\t', index=False, header=False)
@@ -97,26 +101,28 @@ if __name__ == "__main__":
     parser.add_argument('--keep-emojis',
                         default=None,
                         required=False,
-                        type=int,
+                        type=bool,
                         help='keep emojis')
     parser.add_argument('--to-lower',
                         default=None,
                         required=False,
-                        type=int,
+                        type=bool,
                         help='to lowercased')
     parser.add_argument('--to-ascii',
                         default=None,
                         required=False,
-                        type=int,
+                        type=bool,
                         help='convert to ascii')
     parser.add_argument('--segment-hashtag',
                         default=None,
                         required=False,
-                        type=int,
+                        type=bool,
                         help='segment hashtag')
+
+    parser.add_argument('--feature', dest='feature', action='store_true')
+    parser.add_argument('--no-feature', dest='feature', action='store_false')
+    parser.set_defaults(feature=True)
+
     args = parser.parse_args()
     run(pretrained_bert_name=args.pretrained_bert,
-        train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit,
-        to_ascii=bool(args.to_ascii), to_lower=bool(args.to_lower),
-        keep_emojis=bool(args.keep_emojis),
-        segment_hashtag=bool(args.segment_hashtag))
+        train_limit=args.train_limit, valid_limit=args.valid_limit, test_limit=args.test_limit)
