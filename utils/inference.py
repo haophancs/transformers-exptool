@@ -120,17 +120,11 @@ def soft_voting_predict(all_model_paths, df_path, labels=None):
     for proba in all_model_probas:
         assert proba.shape == shape
 
-    all_model_precision_scores = np.array(all_model_precision_scores)
-    all_models_recall_scores = np.array(all_models_recall_scores)
     proba_final = np.zeros(shape=shape)
     for prediction_idx in range(proba_final.shape[0]):
         for model_idx in range(len(all_model_probas)):
-            proba_final[prediction_idx][0] += all_model_probas[model_idx][prediction_idx][0] \
-                                              * all_models_recall_scores[model_idx]
-            proba_final[prediction_idx][1] += all_model_probas[model_idx][prediction_idx][1] \
-                                              * all_model_precision_scores[model_idx]
-        proba_final[prediction_idx][0] /= all_models_recall_scores.sum()
-        proba_final[prediction_idx][1] /= all_model_precision_scores.sum()
+            proba_final[prediction_idx][0] += all_model_probas[model_idx][prediction_idx][0]
+            proba_final[prediction_idx][1] += all_model_probas[model_idx][prediction_idx][1]
     predictions_final = proba_final.argmax(axis=1)
     predictions_final = np.vectorize(lambda label: labels[label])(predictions_final)
     gc.collect()
