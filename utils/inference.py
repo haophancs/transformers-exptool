@@ -103,6 +103,7 @@ def single_predict(model_path, df_path, labels=None):
         random_state=model_info['random_state'],
         df_path=preprocessed_df_path)
     os.remove(preprocessed_df_path)
+    predictions = np.vectorize(lambda label: labels[label])(predictions)
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
