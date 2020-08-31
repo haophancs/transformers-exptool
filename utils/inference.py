@@ -81,6 +81,34 @@ def preprocess(df_path, pretrained_bert_name,
     return temp_path
 
 
+def single_predict(model_path, df_path, labels=None):
+    if labels is None:
+        labels = [0, 1]
+    model_info = extract_model_info(model_path)
+    print('-' * 20)
+    print('Processing', model_info['model_name'])
+    del model_info['model_name']
+    print('Model info:', model_info)
+    print('-- Preparing data for inference...')
+    preprocessed_df_path = preprocess(df_path=df_path,
+                                      labels=labels,
+                                      pretrained_bert_name=model_info['pretrained_bert'],
+                                      keep_emojis=model_info['keep_emojis'],
+                                      segment_hashtag=model_info['segment_hashtag'])
+    print('-- Predicting...')
+    _, predictions, predictions_proba, _ = bert_clf.predict(
+        pretrained_bert_name=model_info['pretrained_bert'],
+        model_path=model_path,
+        batch_size=model_info['batch_size'],
+        random_state=model_info['random_state'],
+        df_path=preprocessed_df_path)
+    os.remove(preprocessed_df_path)
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    return predictions
+
+
 def soft_voting_predict(all_model_paths, df_path, labels=None):
     if labels is None:
         labels = [0, 1]

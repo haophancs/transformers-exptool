@@ -7,8 +7,6 @@ import torch
 from fairseq.data import Dictionary
 from fairseq.data.encoders.fastbpe import fastBPE
 from transformers import AutoTokenizer, AutoModel, AutoConfig
-from transformers import RobertaConfig as RobertaConfig
-from transformers import RobertaModel as RobertaModel
 from typing import List
 
 PretrainedOptionsAvailable = ['bert-base-cased', 'vinai/bertweet-base', 'albert-base-v2', 'xlm-roberta-large',
@@ -24,22 +22,6 @@ parser.add_argument('--bpe-codes',
                     help='path to fastBPE BPE')
 args = parser.parse_args(
     ['--bpe-codes', os.path.join(pretrained_prefix, 'vinai/bertweet-base/bpe.codes')])
-
-
-def BERTweetConfig(additional_config):
-    config = RobertaConfig.from_pretrained(
-        os.path.join(pretrained_prefix, "vinai/bertweet-base/org_config.json"),
-        **additional_config
-    )
-    return config
-
-
-def BERTweetModel(additional_config):
-    model = RobertaModel.from_pretrained(
-        os.path.join(pretrained_prefix, "vinai/bertweet-base/pytorch_model.bin"),
-        config=BERTweetConfig(additional_config)
-    )
-    return model
 
 
 class BERTweetTokenizer:
@@ -119,11 +101,7 @@ def load_pretrain_model_config(pretrained_name):
 
 
 def load_pretrained_model(pretrained_name):
-    additional_config_dirpath = os.path.join(__config_path__, f'bert-reconfig/{pretrained_name}')
-    assert pretrained_name in PretrainedOptionsAvailable
-    with open(os.path.join(additional_config_dirpath, 'model.json')) as JSON:
-        additional_model_config = json.loads(JSON.read())
-    bert_config = AutoConfig.from_pretrained(pretrained_name, **additional_model_config)
+    bert_config = load_pretrain_model_config(pretrained_name)
     bert_model = AutoModel.from_pretrained(pretrained_name, config=bert_config)
     return bert_model
 

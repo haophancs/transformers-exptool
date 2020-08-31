@@ -6,7 +6,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--df-path',
-                        default=os.path.abspath("./data/normalized/test_normalized.tsv"),
+                        default=os.path.abspath("./data/raw/test.tsv"),
                         required=False,
                         type=str,
                         help='dataframe path')
@@ -15,22 +15,34 @@ if __name__ == "__main__":
                         type=str,
                         required=False,
                         help='output path')
+    parser.add_argument('--model-path',
+                        default='',
+                        type=str,
+                        help='model path')
+    parser.add_argument('--model-list-path',
+                        default='./model_list.txt',
+                        type=str,
+                        help='path of model list')
     parser.add_argument('--voting-type',
-                        default='hard',
+                        default='',
                         choices=['hard', 'soft'],
                         type=str,
                         help='type of voting for ensemble method')
+    parser.add_argument('--run-eval', default=False, type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
+
     args = parser.parse_args()
-    model_paths = [
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_1_96_9198_9237.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_2_144_9059_9386.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_2_380343_9202_9280.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_1_9042_9407.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_25_9236_9216.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_4_747_9076_9364.bin',
-        '/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_3e-05_2_380343_9216_9216.bin']
-    if args.voting_type == 'soft':
-        predictions = soft_voting_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
+    if not args.model_path:
+        assert args.voting_type == ''
+        predictions = single_predict(args.model_path, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     else:
-        predictions = hard_voting_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
+        if args.voting_type == '':
+            args.voting_type = 'hard'
+        with open(args.model_list_path) as f:
+            model_paths = [line.rstrip() for line in f]
+        if args.voting_type == 'soft':
+            predictions = soft_voting_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
+        else:
+            predictions = hard_voting_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     np.savetxt(args.output_path, predictions, delimiter="\n", fmt="%s")
+    if args.run_eval:
+        os.system(f'python3 evaluator.py {args.output_path} {args.df_path}')
