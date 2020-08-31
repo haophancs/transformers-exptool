@@ -1,6 +1,7 @@
 from utils.inference import *
 import numpy as np
 import argparse
+import tempfile
 import os
 
 if __name__ == "__main__":
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('--run-eval', default=False, type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
 
     args = parser.parse_args()
-    if not args.model_path:
+    if args.model_path:
         assert args.voting_type == ''
         predictions = single_predict(args.model_path, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     else:
@@ -45,4 +46,10 @@ if __name__ == "__main__":
             predictions = hard_voting_predict(model_paths, args.df_path, labels=['UNINFORMATIVE', 'INFORMATIVE'])
     np.savetxt(args.output_path, predictions, delimiter="\n", fmt="%s")
     if args.run_eval:
-        os.system(f'python3 evaluator.py {args.output_path} {args.df_path}')
+        temp_name = None
+        if args.df_path.startswith('http'):
+            temp_name = next(tempfile._get_candidate_names())
+            os.system(f'wget -O {temp_name} {args.df_path}')
+        os.system(f'python3 evaluator.py {args.output_path} {temp_name}')
+        if temp_name is not None:
+            os.remove(temp_name)
