@@ -49,7 +49,7 @@ if __name__ == "__main__":
         temp_name = None
         if args.df_path.startswith('http'):
             temp_name = next(tempfile._get_candidate_names())
-            os.system(f'wget -O {temp_name} {args.df_path}')
+            os.system(f'wget -q -O {temp_name} {args.df_path}')
         os.system(f'python3 evaluator.py {args.output_path} {temp_name}')
         if temp_name is not None:
             os.remove(temp_name)

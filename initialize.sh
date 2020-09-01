@@ -6,6 +6,7 @@ sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/ja
 pip install -r requirements.txt
 
 mkdir -p models/pretrained/vinai
+mkdir -p models/releases
 mkdir data/normalized
 
 wget https://public.vinai.io/BERTweet_base_transformers.tar.gz
