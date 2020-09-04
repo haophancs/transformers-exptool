@@ -1,8 +1,6 @@
 import sys
 import os
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
 
@@ -140,13 +138,15 @@ if __name__ == "__main__":
     [_, pred_label_file, true_label_file] = sys.argv
     precision, recall, f1, accuracy, conf_matrix = evaluate(pred_label_file, true_label_file)
     print("F1-score: {}\nPrecision: {}\nRecall: {}\nAccuracy: {}\n".format(f1, precision, recall, accuracy))
-    print('Confusion matrix:')
+    print('Confusion matrix:\n', conf_matrix)
+    """
     ax = plt.subplot()
-    sns.heatmap(conf_matrix, annot=True, ax=ax, cmap='YlGnBu')
+    sns.heatmap(conf_matrix, annot=True, ax=ax, cmap='YlGnBu')  # annot=True to annotate cells
     # labels, title and ticks
     ax.set_xlabel('Predicted labels')
     ax.set_ylabel('Actual labels')
     ax.set_title('Confusion Matrix')
     ax.xaxis.set_ticklabels(['UNINFORMATIVE', 'INFORMATIVE'])
     ax.yaxis.set_ticklabels(['UNINFORMATIVE', 'INFORMATIVE'])
-    plt.show()
+    plt.show()   
+    """

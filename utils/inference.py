@@ -16,26 +16,18 @@ def extract_model_info(model_path):
     result['model_name'] = model_name
     """
     0: pretrained bert name
-    1: keep emojis?
-    2: segment hashtag?
-    3: batch size
-    4: learning rate
-    5: epoch
-    6: random state
-    7: precision score
-    8: recall score
+    1: batch size
+    2: learning rate
+    3: epoch
+    4: random state
     """
     config = model_name.split('_')
-    assert len(config) == 9
+    assert len(config) == 5
     result['pretrained_bert'] = "/".join(config[0].split('+'))
-    result['keep_emojis'] = bool(int(config[1]))
-    result['segment_hashtag'] = bool(int(config[2]))
-    result['batch_size'] = int(config[3])
-    result['learning_rate'] = float(config[4])
-    result['epoch'] = int(config[5])
-    result['random_state'] = int(config[6])
-    result['precision'] = float(config[7]) / 10000
-    result['recall'] = float(config[8]) / 10000
+    result['batch_size'] = int(config[1])
+    result['learning_rate'] = float(config[2])
+    result['epoch'] = int(config[3])
+    result['random_state'] = int(config[4])
     return result
 
 
@@ -92,9 +84,7 @@ def single_predict(model_path, df_path, labels=None):
     print('-- Preparing data for inference...')
     preprocessed_df_path = preprocess(df_path=df_path,
                                       labels=labels,
-                                      pretrained_bert_name=model_info['pretrained_bert'],
-                                      keep_emojis=model_info['keep_emojis'],
-                                      segment_hashtag=model_info['segment_hashtag'])
+                                      pretrained_bert_name=model_info['pretrained_bert'])
     print('-- Predicting...')
     _, predictions, predictions_proba, _ = bert_clf.predict(
         pretrained_bert_name=model_info['pretrained_bert'],
@@ -115,22 +105,16 @@ def soft_voting_predict(all_model_paths, df_path, labels=None):
         labels = [0, 1]
     all_model_predictions = []
     all_model_probas = []
-    all_model_precision_scores = []
-    all_models_recall_scores = []
     for model_path in all_model_paths:
         model_info = extract_model_info(model_path)
         print('-' * 20)
         print('Processing', model_info['model_name'])
         del model_info['model_name']
         print('Model info:', model_info)
-        all_model_precision_scores.append(model_info['precision'])
-        all_models_recall_scores.append(model_info['recall'])
         print('-- Preparing data for inference...')
         preprocessed_df_path = preprocess(df_path=df_path,
                                           labels=labels,
-                                          pretrained_bert_name=model_info['pretrained_bert'],
-                                          keep_emojis=model_info['keep_emojis'],
-                                          segment_hashtag=model_info['segment_hashtag'])
+                                          pretrained_bert_name=model_info['pretrained_bert'])
         print('-- Predicting...')
         _, predictions, predictions_proba, _ = bert_clf.predict(
             pretrained_bert_name=model_info['pretrained_bert'],
@@ -173,9 +157,7 @@ def hard_voting_predict(all_model_paths, df_path, labels=None):
         print('-- Preparing data for inference...')
         preprocessed_df_path = preprocess(df_path=df_path,
                                           labels=labels,
-                                          pretrained_bert_name=model_info['pretrained_bert'],
-                                          keep_emojis=model_info['keep_emojis'],
-                                          segment_hashtag=model_info['segment_hashtag'])
+                                          pretrained_bert_name=model_info['pretrained_bert'])
         print('-- Predicting...')
         _, predictions, _, _ = bert_clf.predict(
             pretrained_bert_name=model_info['pretrained_bert'],
