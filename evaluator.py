@@ -1,5 +1,8 @@
 import sys
 import os
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 label_map = {"UNINFORMATIVE": 0, "INFORMATIVE": 1}
 
@@ -50,12 +53,15 @@ def calculate_scores(pred_labels, true_labels, pos_label=label_map["INFORMATIVE"
     tp = 0  # true positive
     fn = 0  # false negative
     fp = 0  # false positive
+    tn = 0  # true negative
     n_correct = 0
     for i in range(len(pred_labels)):
         if true_labels[i] == pred_labels[i]:
             n_correct += 1
             if pred_labels[i] == pos_label:
                 tp += 1
+            else:
+                tn += 1
         else:
             if pred_labels[i] == pos_label:
                 fp += 1
@@ -80,7 +86,9 @@ def calculate_scores(pred_labels, true_labels, pos_label=label_map["INFORMATIVE"
     accuracy = 0.0
     if len(true_labels) > 0:
         accuracy = n_correct * 1.0 / len(true_labels)
-    return precision, recall, f1, accuracy
+
+    conf_matrix = np.array([tn, fp, fn, tp]).reshape(2, 2)
+    return precision, recall, f1, accuracy, conf_matrix
 
 
 def evaluate(pred_label_file, true_label_file, gold_indices_file=None):
@@ -118,7 +126,7 @@ def score(input_dir, output_dir):
     submission_path = os.path.join(submission_dir, submission_file_name)
     ground_truth_file = os.path.join(input_dir, 'ref', 'groundtruth_data.txt')
     gold_indices_file = os.path.join(input_dir, 'ref', 'gold_indices.txt')
-    precision, recall, f1, accuracy = evaluate(submission_path, ground_truth_file, gold_indices_file)
+    precision, recall, f1, accuracy, conf_matrix = evaluate(submission_path, ground_truth_file, gold_indices_file)
     with open(os.path.join(output_dir, 'scores.txt'), 'w') as output_file:
         output_file.write("F1-score:{}\nPrecision:{}\nRecall:{}\nAccuracy:{}\n".format(f1, precision, recall, accuracy))
 
@@ -130,5 +138,15 @@ def main():
 
 if __name__ == "__main__":
     [_, pred_label_file, true_label_file] = sys.argv
-    precision, recall, f1, accuracy = evaluate(pred_label_file, true_label_file)
+    precision, recall, f1, accuracy, conf_matrix = evaluate(pred_label_file, true_label_file)
     print("F1-score: {}\nPrecision: {}\nRecall: {}\nAccuracy: {}\n".format(f1, precision, recall, accuracy))
+    print('Confusion matrix:')
+    ax = plt.subplot()
+    sns.heatmap(conf_matrix, annot=True, ax=ax, cmap='YlGnBu')
+    # labels, title and ticks
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('Actual labels')
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(['UNINFORMATIVE', 'INFORMATIVE'])
+    ax.yaxis.set_ticklabels(['UNINFORMATIVE', 'INFORMATIVE'])
+    plt.show()
