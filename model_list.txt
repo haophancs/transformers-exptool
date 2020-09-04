@@ -1,7 +1,7 @@
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_1_96_9198_9237.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_2_144_9059_9386.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_2_380343_9202_9280.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_1_9042_9407.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_3_25_9236_9216.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_2e-05_4_747_9076_9364.bin
-/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_1_1_16_3e-05_2_380343_9216_9216.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_1_96.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_2_144.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_2_380343.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_3_1.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_3_25.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_2e-05_4_747.bin
+/content/drive/My Drive/Projects/covid19tweet/releases/models/digitalepidemiologylab+covid-twitter-bert_16_3e-05_2_380343.bin
