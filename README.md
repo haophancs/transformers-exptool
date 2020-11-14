@@ -8,7 +8,7 @@
 
 # Cite UIT-HSE at WNUT-2020 Task 2: Exploiting CT-BERT for Identifying COVID-19 Information on the Twitter Social Network
 
-You can cite our [main article ] on aclweb (https://www.aclweb.org/anthology/2020.wnut-1.53/):
+You can cite our article on aclweb (https://www.aclweb.org/anthology/2020.wnut-1.53/):
 ```bibtex
 @inproceedings{tran-etal-2020-uit,
     title = "{UIT}-{HSE} at {WNUT}-2020 Task 2: Exploiting {CT}-{BERT} for Identifying {COVID}-19 Information on the {T}witter Social Network",
