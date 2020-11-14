@@ -1,6 +1,6 @@
 # CT-BERT Fine tunning
 Cite as 
-@inproceedings{tran-etal-2020-uit,
+**@inproceedings{tran-etal-2020-uit,
     title = "{UIT}-{HSE} at {WNUT}-2020 Task 2: Exploiting {CT}-{BERT} for Identifying {COVID}-19 Information on the {T}witter Social Network",
     author = "Tran, Khiem  and
       Phan, Hao  and
